@@ -14,13 +14,10 @@ class _GenericChat:
     """Contains data from a chat with one or more people"""
 
     messageColumns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
-    # convoColumns = ["startMessage", "endMessage", "startTimestamp", "endTimestamp"]
     messages = pd.DataFrame(columns=messageColumns)
 
-    # conversations = pd.DataFrame(columns=convoColumns)
-
-    # Todo: consider adding init switch to make conversations,
-    # todo add support for fixing files with messaeg in name that arent messages
+    convoColumns = ["startMessage", "endMessage", "startTimestamp", "endTimestamp"]
+    conversations = pd.DataFrame(columns=convoColumns)
 
     def load(self, path: str, _postProcess: bool = True) -> None:
         """Loads a single JSON message file
@@ -95,19 +92,37 @@ class _GenericChat:
 
     def _postProcess(self):
         self._sort()
-        self._groupMessages()
+        self._makeConversations()
 
     def _sort(self):
         self.messages = self.messages.sort_values("timestamp", ignore_index=True)
 
-    def _groupMessages(self, df=None):
-        if df == None:
+    def _makeConversations(self, df=None):
+        if df is None:
             df = self.messages
 
-        s = (df.timestamp.diff() > pd.Timedelta(hours=1)).cumsum()
-        print(s)
-        m = self.messages.conversation.max()
-        df["conversation"] = s - s.min()
+        # Find all timing gaps of an hour or more
+        gaps = (df.timestamp.diff() > pd.Timedelta(hours=1))
+        # cumsum to compute conversation numbers
+        #   (increments every time the limit expires)
+        cumsum = gaps.cumsum()
+        df["conversation"] = cumsum
+
+        # Build conversation DataFrame (with numpy searchsorted)
+        # Get every time a new conversation starts (time limit elapsed, gaps==True)
+        changes = gaps[gaps].index.to_series().reset_index(drop=True)
+
+        # Assign startMessage and endMessage, including start and end indices
+        # Note: converting to lists is un-ideal but more readable than concatenation
+        self.conversations["startMessage"] = [0] + changes.tolist()
+        self.conversations["endMessage"] = (changes - 1).tolist() + [self.messages.last_valid_index()]
+
+        # Start and end timestamps - shift truth table, index, consolidate
+        starts = gaps
+        starts[0] = True
+        self.conversations["startTimestamp"] = self.messages.timestamp[starts].reset_index(drop=True)
+        ends = gaps.shift(periods=-1, fill_value=True)
+        self.conversations["endTimestamp"] = self.messages.timestamp[ends].reset_index(drop=True)
 
 
 class MessengerChat(_GenericChat):
