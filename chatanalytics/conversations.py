@@ -10,7 +10,7 @@ import pandas as pd
 pd.set_option('display.max_columns', None)
 
 
-class _GenericChat:
+class GenericChat:
     """Contains data from a chat with one or more people"""
 
     messageColumns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
