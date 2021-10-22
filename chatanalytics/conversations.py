@@ -80,6 +80,13 @@ class _GenericChat:
     ######################
 
     def _preProcess(self, data: [dict, pd.DataFrame]):
+        """Processes data before adding to data record
+
+        Creates a dataframe, orders the data,
+        sets source column, and removes extra columns
+
+        :param data: dict or DataFrame with data
+        :return: Dataframe of processed data"""
         df = pd.DataFrame(data)
 
         if df.loc[0, "timestamp"] > df.loc[1, "timestamp"]:
@@ -91,13 +98,28 @@ class _GenericChat:
         return df
 
     def _postProcess(self):
+        """Processes entire data after adding to record
+
+        Sorts all messages by timestamp and then groups conversations
+
+        :return: None"""
         self._sort()
         self._makeConversations()
 
     def _sort(self):
+        """Sorts all messages by timestamp
+
+        :return: None"""
         self.messages = self.messages.sort_values("timestamp", ignore_index=True)
 
     def _makeConversations(self, df=None):
+        """Groups messages into conversations
+
+        Messages sent less than an hour apart to the same person
+        count as the same conversation,
+        then makes conversation dataframe
+
+        :return: None"""
         if df is None:
             df = self.messages
 
@@ -159,6 +181,13 @@ class MessengerChat(_GenericChat):
     ######################
 
     def _preProcess(self, data):
+        """Processes data before adding to data record
+
+        Creates a dataframe, orders the data,
+        sets source column, and removes extra columns
+
+        :param data: dict or DataFrame with data
+        :return: Dataframe of processed data"""
         df = pd.DataFrame(data["messages"])
         df = df.rename(columns={"sender_name": "sender"})
         df = df.assign(channel=data["title"])
@@ -186,7 +215,7 @@ class MessengerChat(_GenericChat):
 
 
 class DiscordChat(_GenericChat):
-    """Contains data on Facebook Messenger chats"""
+    """Contains data on Discord chats"""
 
     def load(self, path: str, _postProcess: bool = True) -> None:
         """Loads data for a single channel from discord
@@ -241,6 +270,14 @@ class DiscordChat(_GenericChat):
     ######################
 
     def _preProcess(self, channel, messages):
+        """Processes data before adding to data record
+
+        Creates a dataframe, orders the data,
+        sets source column, and removes extra columns
+
+        :param channel: Channel information
+        :param messages: Message data
+        :return: Dataframe of processed data"""
         df = pd.DataFrame(messages)
         df = df.rename(columns={"Contents": "content"})
         df = df.assign(sender="user")
