@@ -8,20 +8,25 @@ from dateutil.relativedelta import relativedelta, MO
 epoch = datetime.date(1970, 1, 1)
 
 
-def label_days(df):
-    df = df.assign(day=lambda x: (x["timestamp"]))
+def get_last_day(dt):
+    """Gets date of current day, or last day if before 5 AM
 
-
-def get_last_day(date):
-    if date.hour < 5:
-        return date.date() + datetime.timedelta(days=-1)
+    If a conversation occurs in the early morning, it is likely
+    a continuation of one from a prior day
+    :param dt: a datetime or datetime-like to convert
+    :return: a date object
+    """
+    if dt.hour < 5:
+        return dt.date() + dt.timedelta(days=-1)
     else:
-        return date.date()
+        return dt.date()
 
 
-def get_last_monday(date):
-    return date.date() + relativedelta(weekday=MO(-1))
+def get_last_monday(dt):
+    """Gets the date of the previous monday"""
+    return dt.date() + relativedelta(weekday=MO(-1))
 
 
 def get_day_number(dt):
+    """Gets days since the epoch 1/1/1970"""
     return (dt - epoch).days
