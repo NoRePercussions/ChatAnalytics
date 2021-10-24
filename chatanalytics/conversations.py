@@ -13,38 +13,38 @@ pd.set_option('display.max_columns', None)
 class GenericChat:
     """Contains data from a chat with one or more people"""
 
-    messageColumns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
-    messages = pd.DataFrame(columns=messageColumns)
+    message_columns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
+    messages = pd.DataFrame(columns=message_columns)
 
-    convoColumns = ["startMessage", "endMessage", "startTimestamp", "endTimestamp"]
-    conversations = pd.DataFrame(columns=convoColumns)
+    convo_columns = ["startMessage", "endMessage", "startTimestamp", "endTimestamp"]
+    conversations = pd.DataFrame(columns=convo_columns)
 
-    def load(self, path: str, _postProcess: bool = True) -> None:
+    def load(self, path: str, _post_process: bool = True) -> None:
         """Loads a single JSON message file
 
         :param path: the name of the file to load
-        :param _postProcess: whether to postprocess data, default True
+        :param _post_process: whether to postprocess data, default True
         :return: None
         """
 
         with open(path, "r", encoding='utf-8') as file:
             data = json.load(file)
 
-        df = self._preProcess(data)
+        df = self._pre_process(data)
         self.messages = pd.concat([self.messages, df])
 
         # Easy enough to completely regroup
-        if _postProcess:
-            self._postProcess()
+        if _post_process:
+            self._post_process()
 
-    def batchLoad(self, path: str, doWalk: bool = False, _postProcess: bool = True) -> None:
+    def batch_load(self, path: str, do_walk: bool = False, _post_process: bool = True) -> None:
         """Load a directory of data files
 
         Lists or walks through the directory and import *all* files
 
         :param path: The path to the directory
-        :param doWalk: whether to walk through the directory,
-        :param _postProcess: whether to postprocess data, default True
+        :param do_walk: whether to walk through the directory,
+        :param _post_process: whether to postprocess data, default True
         :return: None
         """
         if isfile(path):
@@ -54,12 +54,12 @@ class GenericChat:
         for (dirpath, dirnames, filenames) in walk(path):
             for f in filenames:
                 if "message" in f and ".json" in f:
-                    self.load(dirpath + "/" + f, _postProcess=False)
-            if not doWalk:
+                    self.load(dirpath + "/" + f, _post_process=False)
+            if not do_walk:
                 break
 
-        if _postProcess:
-            self._postProcess()
+        if _post_process:
+            self._post_process()
 
     def clear(self) -> None:
         """Clears all messages in the conversation
@@ -68,18 +68,18 @@ class GenericChat:
         """
         self.messages = self.messages.iloc[0:0]
 
-    def regroupAll(self) -> None:
+    def regroup_all(self) -> None:
         """Sorts and groups all messages
 
         :return: None
         """
-        self._postProcess()
+        self._post_process()
 
     ######################
     # Internal Functions #
     ######################
 
-    def _preProcess(self, data: [dict, pd.DataFrame]):
+    def _pre_process(self, data: [dict, pd.DataFrame]):
         """Processes data before adding to data record
 
         Creates a dataframe, orders the data,
@@ -94,17 +94,17 @@ class GenericChat:
         df = df.assign(source=None)
         df = df.assign(conversation=0)
 
-        df = df.drop(columns=[col for col in df if col not in self.messageColumns])
+        df = df.drop(columns=[col for col in df if col not in self.message_columns])
         return df
 
-    def _postProcess(self):
+    def _post_process(self):
         """Processes entire data after adding to record
 
         Sorts all messages by timestamp and then groups conversations
 
         :return: None"""
         self._sort()
-        self._makeConversations()
+        self._make_conversations()
 
     def _sort(self):
         """Sorts all messages by timestamp
@@ -112,7 +112,7 @@ class GenericChat:
         :return: None"""
         self.messages = self.messages.sort_values("timestamp", ignore_index=True)
 
-    def _makeConversations(self, df=None):
+    def _make_conversations(self, df=None):
         """Groups messages into conversations
 
         Messages sent less than an hour apart to the same person
@@ -147,19 +147,19 @@ class GenericChat:
         self.conversations["endTimestamp"] = self.messages.timestamp[ends].reset_index(drop=True)
 
 
-class MessengerChat(_GenericChat):
+class MessengerChat(GenericChat):
     """Contains data on Facebook Messenger chats"""
 
     pattern = re.compile(r"message_\d+\.json")
 
-    def batchLoad(self, path: str, doWalk: bool = True, _postProcess: bool = True) -> None:
+    def batch_load(self, path: str, do_walk: bool = True, _post_process: bool = True) -> None:
         """Load a directory of data files
 
         Lists or walks through the directory and import *all* files
 
         :param path: The path to the directory
-        :param doWalk: whether to walk through the directory,
-        :param _postProcess: whether to postprocess data, default True
+        :param do_walk: whether to walk through the directory,
+        :param _post_process: whether to postprocess data, default True
         :return: None
         """
         if isfile(path):
@@ -169,18 +169,18 @@ class MessengerChat(_GenericChat):
         for (dirpath, dirnames, filenames) in walk(path):
             for f in filenames:
                 if self.pattern.match(f):
-                    self.load(dirpath + "/" + f, _postProcess=False)
-            if not doWalk:
+                    self.load(dirpath + "/" + f, _post_process=False)
+            if not do_walk:
                 break
 
-        if _postProcess:
-            self._postProcess()
+        if _post_process:
+            self._post_process()
 
     ######################
     # Internal Functions #
     ######################
 
-    def _preProcess(self, data):
+    def _pre_process(self, data):
         """Processes data before adding to data record
 
         Creates a dataframe, orders the data,
@@ -204,7 +204,7 @@ class MessengerChat(_GenericChat):
             .dt.tz_convert('America/New_York')
 
         # Drop extra columns
-        df = df.drop(columns=[col for col in df if col not in self.messageColumns])
+        df = df.drop(columns=[col for col in df if col not in self.message_columns])
 
         # Reindex and label
         if df.shape[0] > 1 and df.iloc[0].loc["timestamp"] > df.iloc[1].loc["timestamp"]:
@@ -214,16 +214,16 @@ class MessengerChat(_GenericChat):
         return df
 
 
-class DiscordChat(_GenericChat):
+class DiscordChat(GenericChat):
     """Contains data on Discord chats"""
 
-    def load(self, path: str, _postProcess: bool = True) -> None:
+    def load(self, path: str, _post_process: bool = True) -> None:
         """Loads data for a single channel from discord
 
         Loads messages.csv and channel.json files
         :param path: the directory of the file to load,
                         or path to either file
-        :param _postProcess: whether to postprocess data, default True
+        :param _post_process: whether to postprocess data, default True
         :return: None
         """
 
@@ -235,21 +235,21 @@ class DiscordChat(_GenericChat):
         with open(path + "/" + "messages.csv", "r", encoding='utf-8') as file:
             messages = pd.read_csv(file)
 
-        df = self._preProcess(channel, messages)
+        df = self._pre_process(channel, messages)
         self.messages = pd.concat([self.messages, df])
 
         # Easy enough to completely regroup
-        if _postProcess:
-            self._postProcess()
+        if _post_process:
+            self._post_process()
 
-    def batchLoad(self, path: str, doWalk: bool = True, _postProcess: bool = True) -> None:
+    def batch_load(self, path: str, do_walk: bool = True, _post_process: bool = True) -> None:
         """Load a directory of data files
 
         Lists or walks through the directory and import *all* files
 
         :param path: The path to the directory
-        :param doWalk: whether to walk through the directory,
-        :param _postProcess: whether to postprocess data, default True
+        :param do_walk: whether to walk through the directory,
+        :param _post_process: whether to postprocess data, default True
         :return: None
         """
         if isfile(path):
@@ -258,18 +258,18 @@ class DiscordChat(_GenericChat):
 
         for (dirpath, dirnames, filenames) in walk(path):
             if "messages.csv" in filenames and "channel.json" in filenames:
-                self.load(dirpath, _postProcess=False)
-            if not doWalk:
+                self.load(dirpath, _post_process=False)
+            if not do_walk:
                 break
 
-        if _postProcess:
-            self._postProcess()
+        if _post_process:
+            self._post_process()
 
     ######################
     # Internal Functions #
     ######################
 
-    def _preProcess(self, channel, messages):
+    def _pre_process(self, channel, messages):
         """Processes data before adding to data record
 
         Creates a dataframe, orders the data,
@@ -301,7 +301,7 @@ class DiscordChat(_GenericChat):
         df["timestamp"] = timestamps.dt.tz_convert('America/New_York')
 
         # Drop extra columns
-        df = df.drop(columns=[col for col in df if col not in self.messageColumns])
+        df = df.drop(columns=[col for col in df if col not in self.message_columns])
 
         # Reindex and label
         if df.shape[0] > 1 and df.iloc[0].loc["timestamp"] > df.iloc[1].loc["timestamp"]:
@@ -309,5 +309,3 @@ class DiscordChat(_GenericChat):
         df = df.assign(source="Discord")
         df = df.assign(conversation=0)
         return df
-
-# todo support for non-text messages (content)
