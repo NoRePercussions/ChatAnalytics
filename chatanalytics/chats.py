@@ -154,6 +154,8 @@ class GenericChat:
         # Get every time a new conversation starts (time limit elapsed, gaps==True)
         changes = gaps[gaps].index.to_series().reset_index(drop=True)
 
+        # Reset conversations so previous setup disappears
+        self.conversations = self.conversations.iloc[0:0]
         # Assign startMessage and endMessage, including start and end indices
         # Note: converting to lists is un-ideal but more readable than concatenation
         self.conversations["startMessage"] = [0] + changes.tolist()

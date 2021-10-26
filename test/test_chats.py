@@ -34,6 +34,17 @@ class DiscordChatTest(unittest.TestCase):
     def test_batch_import(self):
         group = chatanalytics.DiscordChat()
         group.batch_load(self.raw_data_path)
-        with open(self.baseline_path + "batch.p", "rb") as f:
+        with open(self.baseline_path + "chat_batch.p", "rb") as f:
             baseline = pickle.load(f)
             self.assertEqual(group, baseline)
+
+    def test_batch_import_equals_import(self):
+        chatA = chatanalytics.DiscordChat()
+        chatA.batch_load(self.raw_data_path)
+
+        chatB = chatanalytics.DiscordChat()
+        chatB.load(self.raw_data_path + self.direct_message_path)
+        chatB.load(self.raw_data_path + self.group_message_path)
+        chatB.load(self.raw_data_path + self.server_message_path)
+
+        self.assertEqual(chatA, chatB)
