@@ -1,0 +1,9 @@
+{
+  "id": "5519593417670182",
+  "type":  0,
+  "name": "test-channel",
+  "guild": {
+    "id": "9822591507713998",
+    "name": "Test Server"
+  }
+}

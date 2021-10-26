@@ -1,7 +1,7 @@
 from .chatgroup import (
     ChatGroup
 )
-from .conversations import (
+from .chats import (
     MessengerChat,
     DiscordChat
 )

@@ -14,10 +14,11 @@ class GenericChat:
     """Contains data from a chat with one or more people"""
 
     message_columns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
-    messages = pd.DataFrame(columns=message_columns)
-
     convo_columns = ["startMessage", "endMessage", "startTimestamp", "endTimestamp"]
-    conversations = pd.DataFrame(columns=convo_columns)
+
+    def __init__(self):
+        self.messages = pd.DataFrame(columns=self.message_columns)
+        self.conversations = pd.DataFrame(columns=self.convo_columns)
 
     def load(self, path: str, _post_process: bool = True) -> None:
         """Loads a single JSON message file
@@ -124,7 +125,8 @@ class GenericChat:
             df = self.messages
 
         # Find all timing gaps of an hour or more
-        gaps = (df.timestamp.diff() > pd.Timedelta(hours=1))
+        gaps = (df.timestamp.diff() > pd.Timedelta(hours=1)) | (~df.channel.eq(df.channel.shift()))
+        gaps[0] = False
         # cumsum to compute conversation numbers
         #   (increments every time the limit expires)
         cumsum = gaps.cumsum()
@@ -145,6 +147,13 @@ class GenericChat:
         self.conversations["startTimestamp"] = self.messages.timestamp[starts].reset_index(drop=True)
         ends = gaps.shift(periods=-1, fill_value=True)
         self.conversations["endTimestamp"] = self.messages.timestamp[ends].reset_index(drop=True)
+
+    def __eq__(self, other):
+        if not isinstance(other, GenericChat):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+        return (self.messages.equals(other.messages)
+                and self.conversations.equals(other.conversations))
 
 
 class MessengerChat(GenericChat):

@@ -5,14 +5,15 @@ from os import listdir
 from os.path import isfile, isdir, join
 
 import pandas as pd
-from conversations import GenericChat, MessengerChat, DiscordChat
-
+#from .chats import GenericChat, MessengerChat, DiscordChat
 pd.set_option('display.max_columns', None)
 
 
 class ChatGroup:
     """A group of Chats from conversations"""
-    chats = []
+
+    def __init__(self):
+        self.chats = []
 
     def load(self, chatType, path):
         """Loads a chat of certain type
@@ -29,7 +30,7 @@ class ChatGroup:
         newChat.batch_load(path, do_walk=True)
         self.chats += [newChat]
 
-    def batchLoad(self, chatType, path):
+    def batch_load(self, chatType, path):
         """Loads a batch of chats of certain type
 
         Ex. batchLoad(DiscordChat, dirPath)
@@ -42,6 +43,9 @@ class ChatGroup:
             return
 
         for f in listdir(path):
+            if not isdir(f"{path}/{f}"):
+                continue
+
             newChat = chatType()
             # use batchLoad to walk the directory --
             # maybe give it a different name, or make
@@ -49,3 +53,5 @@ class ChatGroup:
             newChat.batch_load(f"{path}/{f}", do_walk=True)
             self.chats += [newChat]
 
+#    def __eq__(self, other):
+#
