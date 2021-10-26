@@ -1,6 +1,6 @@
 import unittest
 import pickle
-import chatanalytics # to be run in base directory
+import chatanalytics  # to be run in base directory
 
 
 class DiscordChatGroupTest(unittest.TestCase):
@@ -16,6 +16,12 @@ class DiscordChatGroupTest(unittest.TestCase):
         with open(self.baseline_path + "group_batch.p", "rb") as f:
             baseline = pickle.load(f)
             self.assertEqual(group, baseline)
+    
+    def test_repeated_import(self):
+        group = chatanalytics.ChatGroup()
+        group.load(chatanalytics.DiscordChat, self.raw_data_path + self.direct_message_path)
+        group.load(chatanalytics.DiscordChat, self.raw_data_path + self.group_message_path)
+        group.load(chatanalytics.DiscordChat, self.raw_data_path + self.server_message_path)
 
     def test_batch_import_equals_import(self):
         groupA = chatanalytics.ChatGroup()
