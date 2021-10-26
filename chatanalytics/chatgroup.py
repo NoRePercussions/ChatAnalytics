@@ -3,6 +3,7 @@
 
 from os import listdir
 from os.path import isfile, isdir, join
+from collections import Counter
 
 import pandas as pd
 #from .chats import GenericChat, MessengerChat, DiscordChat
@@ -53,5 +54,6 @@ class ChatGroup:
             newChat.batch_load(f"{path}/{f}", do_walk=True)
             self.chats += [newChat]
 
-#    def __eq__(self, other):
-#
+    def __eq__(self, other):
+        """Test equality by comparing hashes"""
+        return Counter(self.chats) == Counter(other.chats)
