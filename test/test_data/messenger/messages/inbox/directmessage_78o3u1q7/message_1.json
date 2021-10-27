@@ -1,0 +1,40 @@
+{
+  "participants": [
+    {
+      "name": "Direct Message Receiver"
+    },
+    {
+      "name": "Direct Message Sender"
+    }
+  ],
+  "messages": [
+    {
+      "sender_name": "Direct Message Receiver",
+      "timestamp_ms": 1631646004446,
+      "content": "DM message #2 conversation #1",
+      "type": "Generic",
+      "is_unsent": false
+    },
+    {
+      "sender_name": "Direct Message Sender",
+      "timestamp_ms": 1631495503833,
+      "content": "DM message #1 conversation #0",
+      "type": "Generic",
+      "is_unsent": false
+    },
+    {
+      "sender_name": "Direct Message Sender",
+      "timestamp_ms": 1631495493833,
+      "content": "DM message #0 conversation #0",
+      "type": "Generic",
+      "is_unsent": false
+    }
+  ],
+  "title": "Direct Message",
+  "is_still_participant": true,
+  "thread_type": "Regular",
+  "thread_path": "inbox/directmessage_78o3u1q7",
+  "magic_words": [
+
+  ]
+}
