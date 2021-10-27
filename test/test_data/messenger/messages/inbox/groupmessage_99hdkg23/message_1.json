@@ -1,0 +1,57 @@
+{
+  "participants": [
+    {
+      "name": "Group Message Member1"
+    },
+    {
+      "name": "Group Message Member2"
+    },
+    {
+      "name": "Group Message Member3"
+    }
+  ],
+  "messages": [
+    {
+      "sender_name": "Group Message Member2",
+      "timestamp_ms": 1631495503833,
+      "content": "GC message #4 conversation #2",
+      "type": "Generic",
+      "is_unsent": false
+    },
+    {
+      "sender_name": "Group Message Member2",
+      "timestamp_ms": 1621495503833,
+      "content": "GC message #3 conversation #1",
+      "type": "Generic",
+      "is_unsent": false
+    },
+    {
+      "sender_name": "Group Message Member3",
+      "timestamp_ms": 1601415609451,
+      "content": "GC message #2 conversation #0",
+      "type": "Generic",
+      "is_unsent": false
+    },
+    {
+      "sender_name": "Group Message Member2",
+      "timestamp_ms": 1601415608451,
+      "content": "GC message #1 conversation #0",
+      "type": "Generic",
+      "is_unsent": false
+    },
+    {
+      "sender_name": "Group Message Member1",
+      "timestamp_ms": 1601415607451,
+      "content": "GC message #1 conversation #0",
+      "type": "Generic",
+      "is_unsent": false
+    }
+  ],
+  "title": "Group Message",
+  "is_still_participant": true,
+  "thread_type": "RegularGroup",
+  "thread_path": "inbox/groupmessage_99hdkg23",
+  "magic_words": [
+
+  ]
+}
