@@ -6,6 +6,7 @@ from os import walk
 from os.path import isfile
 
 import pandas as pd
+from pandas.util import hash_pandas_object
 
 pd.set_option('display.max_columns', None)
 
@@ -19,6 +20,7 @@ class GenericChat:
     def __init__(self):
         self.messages = pd.DataFrame(columns=self.message_columns)
         self.conversations = pd.DataFrame(columns=self.convo_columns)
+        self.hash = None
 
     def load(self, path: str, _post_process: bool = True) -> None:
         """Loads a single JSON message file
@@ -27,6 +29,8 @@ class GenericChat:
         :param _post_process: whether to postprocess data, default True
         :return: None
         """
+
+        self._reset_hash()  # Altering data!
 
         with open(path, "r", encoding='utf-8') as file:
             data = json.load(file)
@@ -48,6 +52,9 @@ class GenericChat:
         :param _post_process: whether to postprocess data, default True
         :return: None
         """
+
+        self._reset_hash()  # Altering data!
+
         if isfile(path):
             self.load(path)
             return
@@ -67,6 +74,9 @@ class GenericChat:
 
         :return: None
         """
+
+        self._reset_hash()  # Altering data!
+
         self.messages = self.messages.iloc[0:0]
 
     def regroup_all(self) -> None:
@@ -88,6 +98,8 @@ class GenericChat:
 
         :param data: dict or DataFrame with data
         :return: Dataframe of processed data"""
+        self._reset_hash()  # Altering data!
+
         df = pd.DataFrame(data)
 
         if df.loc[0, "timestamp"] > df.loc[1, "timestamp"]:
@@ -104,6 +116,8 @@ class GenericChat:
         Sorts all messages by timestamp and then groups conversations
 
         :return: None"""
+        self._reset_hash()  # Altering data!
+
         self._sort()
         self._make_conversations()
 
@@ -111,6 +125,8 @@ class GenericChat:
         """Sorts all messages by timestamp
 
         :return: None"""
+        self._reset_hash()  # Altering data!
+
         self.messages = self.messages.sort_values("timestamp", ignore_index=True)
 
     def _make_conversations(self, df=None):
@@ -121,6 +137,8 @@ class GenericChat:
         then makes conversation dataframe
 
         :return: None"""
+        self._reset_hash()  # Altering data!
+
         if df is None:
             df = self.messages
 
@@ -136,6 +154,8 @@ class GenericChat:
         # Get every time a new conversation starts (time limit elapsed, gaps==True)
         changes = gaps[gaps].index.to_series().reset_index(drop=True)
 
+        # Reset conversations so previous setup disappears
+        self.conversations = self.conversations.iloc[0:0]
         # Assign startMessage and endMessage, including start and end indices
         # Note: converting to lists is un-ideal but more readable than concatenation
         self.conversations["startMessage"] = [0] + changes.tolist()
@@ -148,12 +168,23 @@ class GenericChat:
         ends = gaps.shift(periods=-1, fill_value=True)
         self.conversations["endTimestamp"] = self.messages.timestamp[ends].reset_index(drop=True)
 
+    def _reset_hash(self):
+        """Reset hash if data changes"""
+        self.hash = None
+
     def __eq__(self, other):
         if not isinstance(other, GenericChat):
             # don't attempt to compare against unrelated types
             return NotImplemented
         return (self.messages.equals(other.messages)
                 and self.conversations.equals(other.conversations))
+
+    def __hash__(self):
+        if self.hash is None:
+            messages_hash = hash_pandas_object(self.messages).sum()  # unordered hashes
+            conversations_hash = hash_pandas_object(self.conversations).sum()
+            self.hash = hash(str(messages_hash) + str(conversations_hash))
+        return self.hash
 
 
 class MessengerChat(GenericChat):
