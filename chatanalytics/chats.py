@@ -17,12 +17,12 @@ class GenericChat:
 
     _message_columns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
     _conversation_columns = ["startMessage", "endMessage", "start_timestamp", "end_timestamp"]
-    _timezone = get_localzone_name()
 
     def __init__(self):
         self.messages = pd.DataFrame(columns=self._message_columns)
         self.conversations = pd.DataFrame(columns=self._conversation_columns)
         self.hash = None
+        self._timezone = get_localzone_name()
 
     def load(self, path: str, _post_process: bool = True) -> None:
         """Loads a single JSON message file
@@ -89,12 +89,20 @@ class GenericChat:
         self._post_process()
 
     def set_timezone(self, tz=None):
+        self._reset_hash()
+
         if tz is None:
             self._timezone = get_localzone_name()
         else:
             self._timezone = tz
 
-        self._reset_hash()
+        if not self.messages.empty:
+            self.messages['timestamp'] = self.messages['timestamp'].dt.tz_convert(self._timezone)
+            self.conversations['start_timestamp'] = self.conversations['start_timestamp'].dt.tz_convert(self._timezone)
+            self.conversations['end_timestamp'] = self.conversations['end_timestamp'].dt.tz_convert(self._timezone)
+
+    def reset_timezone(self):
+        self.set_timezone()
 
         if not self.messages.empty:
             self.messages['timestamp'] = self.messages['timestamp'].dt.tz_convert(self._timezone)

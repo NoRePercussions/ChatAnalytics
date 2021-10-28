@@ -9,37 +9,47 @@ class DiscordChatTest(unittest.TestCase):
     direct_message_path = "c5338959842695873"
     group_message_path = "c5662031163313723"
     server_message_path = "c5519593417670182"
+    timezone = "Asia/Tokyo"
 
     def test_direct_message_import(self):
         group = chatanalytics.DiscordChat()
+        group.set_timezone(self.timezone)
         group.load(self.raw_data_path + self.direct_message_path)
         with open(self.baseline_path + self.direct_message_path + ".p", "rb") as f:
             baseline = pickle.load(f)
+            baseline.set_timezone(self.timezone)
             self.assertEqual(group, baseline)
 
     def test_group_message_import(self):
         group = chatanalytics.DiscordChat()
+        group.set_timezone(self.timezone)
         group.load(self.raw_data_path + self.group_message_path)
         with open(self.baseline_path + self.group_message_path + ".p", "rb") as f:
             baseline = pickle.load(f)
+            baseline.set_timezone(self.timezone)
             self.assertEqual(group, baseline)
 
     def test_server_message_import(self):
         group = chatanalytics.DiscordChat()
+        group.set_timezone(self.timezone)
         group.load(self.raw_data_path + self.server_message_path)
         with open(self.baseline_path + self.server_message_path + ".p", "rb") as f:
             baseline = pickle.load(f)
+            baseline.set_timezone(self.timezone)
             self.assertEqual(group, baseline)
 
     def test_batch_import(self):
         group = chatanalytics.DiscordChat()
         group.batch_load(self.raw_data_path)
+        group.set_timezone(self.timezone)
         with open(self.baseline_path + "chat_batch.p", "rb") as f:
             baseline = pickle.load(f)
+            baseline.set_timezone(self.timezone)
             self.assertEqual(group, baseline)
 
     def test_repeated_import(self):
         chat = chatanalytics.DiscordChat()
+        chat.set_timezone(self.timezone)
         chat.load(self.raw_data_path + self.direct_message_path)
         chat.load(self.raw_data_path + self.group_message_path)
         chat.load(self.raw_data_path + self.server_message_path)
@@ -63,30 +73,38 @@ class MessengerChatTest(unittest.TestCase):
     end = "/message_1.json"
     direct_message_path = "directmessage_78o3u1q7"
     group_message_path = "groupmessage_99hdkg23"
+    timezone = "Asia/Tokyo"
 
     def test_direct_message_import(self):
         group = chatanalytics.MessengerChat()
+        group.set_timezone(self.timezone)
         group.load(self.raw_data_path + self.direct_message_path + self.end)
         with open(self.baseline_path + self.direct_message_path + ".p", "rb") as f:
             baseline = pickle.load(f)
+            baseline.set_timezone(self.timezone)
             self.assertEqual(group, baseline)
 
     def test_group_message_import(self):
         group = chatanalytics.MessengerChat()
+        group.set_timezone(self.timezone)
         group.load(self.raw_data_path + self.group_message_path + self.end)
         with open(self.baseline_path + self.group_message_path + ".p", "rb") as f:
             baseline = pickle.load(f)
+            baseline.set_timezone(self.timezone)
             self.assertEqual(group, baseline)
 
     def test_batch_import(self):
         group = chatanalytics.MessengerChat()
+        group.set_timezone(self.timezone)
         group.batch_load(self.raw_data_path)
         with open(self.baseline_path + "chat_batch.p", "rb") as f:
             baseline = pickle.load(f)
+            baseline.set_timezone(self.timezone)
             self.assertEqual(group, baseline)
 
     def test_repeated_import(self):
         chat = chatanalytics.MessengerChat()
+        chat.set_timezone(self.timezone)
         chat.load(self.raw_data_path + self.direct_message_path + self.end)
         chat.load(self.raw_data_path + self.group_message_path + self.end)
 
