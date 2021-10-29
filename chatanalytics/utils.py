@@ -9,7 +9,16 @@ epoch = datetime.date(1970, 1, 1)
 
 
 def get_last_day(dt):
-    """Gets date of current day, or last day if before 5 AM
+    """Gets date of current day
+
+    :param dt: a datetime or datetime-like to convert
+    :return: a date object
+    """
+    return dt.date()
+
+
+def get_last_waking_day(dt):
+    """Gets date of "waking" day, or last day if before 5 AM
 
     If a conversation occurs in the early morning, it is likely
     a continuation of one from a prior day
