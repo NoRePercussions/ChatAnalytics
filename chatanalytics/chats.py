@@ -7,13 +7,14 @@ from os.path import isfile
 
 import pandas as pd
 from pandas.util import hash_pandas_object
-from tzlocal import get_localzone_name
+from tzlocal import get_localzone, get_localzone_name
+from pytz import UnknownTimeZoneError
 
 pd.set_option('display.max_columns', None)
 
 
 class GenericChat:
-    """Contains data from a chat with one or more people"""
+    """..Contains data from a chat with one or more people"""
 
     _message_columns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
     _conversation_columns = ["startMessage", "endMessage", "start_timestamp", "end_timestamp"]
@@ -22,7 +23,7 @@ class GenericChat:
         self.messages = pd.DataFrame(columns=self._message_columns)
         self.conversations = pd.DataFrame(columns=self._conversation_columns)
         self.hash = None
-        self._timezone = get_localzone_name()
+        self._timezone = self._get_localtime()
 
     def load(self, path: str, _post_process: bool = True) -> None:
         """Loads a single JSON message file
@@ -88,13 +89,16 @@ class GenericChat:
         """
         self._post_process()
 
-    def set_timezone(self, tz=None):
+    def set_timezone(self, timezone=None):
+        """Sets the timezone to use
+
+        :param timezone: None, tz name (str), or tzlocal/pytz object"""
         self._reset_hash()
 
-        if tz is None:
-            self._timezone = get_localzone_name()
+        if timezone is None:
+            self._timezone = self._get_localtime()
         else:
-            self._timezone = tz
+            self._timezone = timezone
 
         if not self.messages.empty:
             self.messages['timestamp'] = self.messages['timestamp'].dt.tz_convert(self._timezone)
@@ -102,12 +106,8 @@ class GenericChat:
             self.conversations['end_timestamp'] = self.conversations['end_timestamp'].dt.tz_convert(self._timezone)
 
     def reset_timezone(self):
-        self.set_timezone()
-
-        if not self.messages.empty:
-            self.messages['timestamp'] = self.messages['timestamp'].dt.tz_convert(self._timezone)
-            self.conversations['start_timestamp'] = self.conversations['start_timestamp'].dt.tz_convert(self._timezone)
-            self.conversations['end_timestamp'] = self.conversations['end_timestamp'].dt.tz_convert(self._timezone)
+        """Sets the timezone to local time"""
+        self.set_timezone(timezone=None)
 
     ######################
     # Internal Functions #
@@ -194,6 +194,19 @@ class GenericChat:
     def _reset_hash(self):
         """Reset hash if data changes"""
         self.hash = None
+
+    @staticmethod
+    def _get_localtime():
+        # Unix may not support get_localzone_name,
+        # but otherwise avoid pytz get_localzone
+        try:
+            return get_localzone_name()
+        except UnknownTimeZoneError:
+            return get_localzone()
+
+    #####################
+    # Special Functions #
+    #####################
 
     def __eq__(self, other):
         if not isinstance(other, GenericChat):

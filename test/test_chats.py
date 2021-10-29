@@ -6,7 +6,7 @@ import chatanalytics  # to be run in base directory
 class DiscordChatTest(unittest.TestCase):
     baseline_path = "test/test_data/discord/baseline/"
     raw_data_path = "test/test_data/discord/messages/"
-    direct_message_path = "c5338959842695873"
+    direct_message_path = "c533895984269587"
     group_message_path = "c5662031163313723"
     server_message_path = "c5519593417670182"
     timezone = "Asia/Tokyo"
