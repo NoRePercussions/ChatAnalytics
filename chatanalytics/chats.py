@@ -7,20 +7,23 @@ from os.path import isfile
 
 import pandas as pd
 from pandas.util import hash_pandas_object
+from tzlocal import get_localzone, get_localzone_name
+from pytz import UnknownTimeZoneError
 
 pd.set_option('display.max_columns', None)
 
 
 class GenericChat:
-    """Contains data from a chat with one or more people"""
+    """..Contains data from a chat with one or more people"""
 
-    message_columns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
-    convo_columns = ["startMessage", "endMessage", "startTimestamp", "endTimestamp"]
+    _message_columns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
+    _conversation_columns = ["startMessage", "endMessage", "start_timestamp", "end_timestamp"]
 
     def __init__(self):
-        self.messages = pd.DataFrame(columns=self.message_columns)
-        self.conversations = pd.DataFrame(columns=self.convo_columns)
+        self.messages = pd.DataFrame(columns=self._message_columns)
+        self.conversations = pd.DataFrame(columns=self._conversation_columns)
         self.hash = None
+        self._timezone = self._get_localtime()
 
     def load(self, path: str, _post_process: bool = True) -> None:
         """Loads a single JSON message file
@@ -86,6 +89,26 @@ class GenericChat:
         """
         self._post_process()
 
+    def set_timezone(self, timezone=None):
+        """Sets the timezone to use
+
+        :param timezone: None, tz name (str), or tzlocal/pytz object"""
+        self._reset_hash()
+
+        if timezone is None:
+            self._timezone = self._get_localtime()
+        else:
+            self._timezone = timezone
+
+        if not self.messages.empty:
+            self.messages['timestamp'] = self.messages['timestamp'].dt.tz_convert(self._timezone)
+            self.conversations['start_timestamp'] = self.conversations['start_timestamp'].dt.tz_convert(self._timezone)
+            self.conversations['end_timestamp'] = self.conversations['end_timestamp'].dt.tz_convert(self._timezone)
+
+    def reset_timezone(self):
+        """Sets the timezone to local time"""
+        self.set_timezone(timezone=None)
+
     ######################
     # Internal Functions #
     ######################
@@ -107,7 +130,7 @@ class GenericChat:
         df = df.assign(source=None)
         df = df.assign(conversation=0)
 
-        df = df.drop(columns=[col for col in df if col not in self.message_columns])
+        df = df.drop(columns=[col for col in df if col not in self._message_columns])
         return df
 
     def _post_process(self):
@@ -164,13 +187,26 @@ class GenericChat:
         # Start and end timestamps - shift truth table, index, consolidate
         starts = gaps
         starts[0] = True
-        self.conversations["startTimestamp"] = self.messages.timestamp[starts].reset_index(drop=True)
+        self.conversations["start_timestamp"] = self.messages.timestamp[starts].reset_index(drop=True)
         ends = gaps.shift(periods=-1, fill_value=True)
-        self.conversations["endTimestamp"] = self.messages.timestamp[ends].reset_index(drop=True)
+        self.conversations["end_timestamp"] = self.messages.timestamp[ends].reset_index(drop=True)
 
     def _reset_hash(self):
         """Reset hash if data changes"""
         self.hash = None
+
+    @staticmethod
+    def _get_localtime():
+        # Unix may not support get_localzone_name,
+        # but otherwise avoid pytz get_localzone
+        try:
+            return get_localzone_name()
+        except UnknownTimeZoneError:
+            return get_localzone()
+
+    #####################
+    # Special Functions #
+    #####################
 
     def __eq__(self, other):
         if not isinstance(other, GenericChat):
@@ -241,10 +277,10 @@ class MessengerChat(GenericChat):
         # Swap to using DateTimes
         df['timestamp'] = pd.to_datetime(df['timestamp_ms'], unit="ms") \
             .dt.tz_localize('UTC') \
-            .dt.tz_convert('America/New_York')
+            .dt.tz_convert(self._timezone)
 
         # Drop extra columns
-        df = df.drop(columns=[col for col in df if col not in self.message_columns])
+        df = df.drop(columns=[col for col in df if col not in self._message_columns])
 
         # Reindex and label
         if df.shape[0] > 1 and df.iloc[0].loc["timestamp"] > df.iloc[1].loc["timestamp"]:
@@ -338,10 +374,10 @@ class DiscordChat(GenericChat):
         timestamps = pd.to_datetime(df['Timestamp'])
         if timestamps.dt.tz is None:
             timestamps = timestamps.dt.tz_localize('UTC')
-        df["timestamp"] = timestamps.dt.tz_convert('America/New_York')
+        df["timestamp"] = timestamps.dt.tz_convert(self._timezone)
 
         # Drop extra columns
-        df = df.drop(columns=[col for col in df if col not in self.message_columns])
+        df = df.drop(columns=[col for col in df if col not in self._message_columns])
 
         # Reindex and label
         if df.shape[0] > 1 and df.iloc[0].loc["timestamp"] > df.iloc[1].loc["timestamp"]:

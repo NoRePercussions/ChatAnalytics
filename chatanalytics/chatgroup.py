@@ -6,6 +6,7 @@ from os.path import isfile, isdir, join
 from collections import Counter
 
 import pandas as pd
+from tzlocal import get_localzone_name
 #from .chats import GenericChat, MessengerChat, DiscordChat
 pd.set_option('display.max_columns', None)
 
@@ -15,6 +16,7 @@ class ChatGroup:
 
     def __init__(self):
         self.chats = []
+        self._timezone = get_localzone_name()
 
     def load(self, chatType, path):
         """Loads a chat of certain type
@@ -25,6 +27,7 @@ class ChatGroup:
         :return:
         """
         newChat = chatType()
+        newChat.set_timezone(self._timezone)
         # use batchLoad to walk the directory --
         # maybe give it a different name, or make
         # a function that walks directories?
@@ -48,11 +51,24 @@ class ChatGroup:
                 continue
 
             newChat = chatType()
+            newChat.set_timezone(self._timezone)
             # use batchLoad to walk the directory --
             # maybe give it a different name, or make
             # a function that walks directories?
             newChat.batch_load(f"{path}/{f}", do_walk=True)
             self.chats += [newChat]
+
+    def set_timezone(self, tz=None):
+        if tz is None:
+            self._timezone = get_localzone_name()
+        else:
+            self._timezone = tz
+
+        for chat in self.chats:
+            chat.set_timezone(self._timezone)
+
+    def reset_timezone(self):
+        self.set_timezone()
 
     def __eq__(self, other):
         """Test equality by comparing hashes"""

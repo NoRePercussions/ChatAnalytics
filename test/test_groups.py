@@ -6,15 +6,18 @@ import chatanalytics  # to be run in base directory
 class DiscordChatGroupTest(unittest.TestCase):
     baseline_path = "test/test_data/discord/baseline/"
     raw_data_path = "test/test_data/discord/messages/"
-    direct_message_path = "c5338959842695873"
+    direct_message_path = "c533895984269587"
     group_message_path = "c5662031163313723"
     server_message_path = "c5519593417670182"
+    timezone = "Asia/Tokyo"
 
     def test_batch_import_works(self):
         group = chatanalytics.ChatGroup()
+        group.set_timezone(self.timezone)
         group.batch_load(chatanalytics.DiscordChat, self.raw_data_path)
         with open(self.baseline_path + "group_batch.p", "rb") as f:
             baseline = pickle.load(f)
+            baseline.set_timezone(self.timezone)
             self.assertEqual(group, baseline)
 
     def test_repeated_import(self):
@@ -41,12 +44,15 @@ class MessengerChatGroupTest(unittest.TestCase):
     end = "/message_1.json"
     direct_message_path = "directmessage_78o3u1q7"
     group_message_path = "groupmessage_99hdkg23"
+    timezone = "Asia/Tokyo"
 
     def test_batch_import_works(self):
         group = chatanalytics.ChatGroup()
+        group.set_timezone(self.timezone)
         group.batch_load(chatanalytics.MessengerChat, self.raw_data_path)
         with open(self.baseline_path + "group_batch.p", "rb") as f:
             baseline = pickle.load(f)
+            baseline.set_timezone(self.timezone)
             self.assertEqual(group, baseline)
 
     def test_repeated_import(self):
