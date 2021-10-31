@@ -30,6 +30,8 @@ class GenericChat:
 
         self.analyze = ChatAnalysis(self)
 
+        self.analyze = ChatAnalysis(self)
+
     def load(self, path: str, _post_process: bool = True) -> None:
         """Loads a single JSON message file
 
