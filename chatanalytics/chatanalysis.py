@@ -180,13 +180,12 @@ class ChatAnalysis:  # stored as GenericChat.analyze
             targeted = self._target(grouped, target)  # group -> series
             return targeted
         elif fgroups is not None and igroup is not None:
-            raise RuntimeError("Not implemented")
             # Apply final groupings
             grouped = self._group(self._parent.messages, fgroups)
 
             def process(group):
                 # Apply initial groupings
-                igrouped = self._group(self._parent.messages, igroup)
+                igrouped = self._group(group, igroup)
                 # Apply targeting
                 targeted = self._target(igrouped, target)
                 operated = self._operate(targeted, op)
