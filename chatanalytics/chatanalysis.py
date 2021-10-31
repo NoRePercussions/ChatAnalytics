@@ -59,26 +59,30 @@ class ChatAnalysis:  # stored as GenericChat.analyze
             "message": self._target_message,
             "conversation": self._target_conversation,
             "word": self._target_word,
-            "character": self._target_character
+            "character": self._target_character,
+            "duration": self._target_duration
         }
         self.target_subs = self._invert_dict({
             "message": ["messages", "msg", "msgs"],
             "conversation": ["conversations", "conv", "convs"],
             "word": ["words", "wd", "wds"],
-            "character": ["characters", "char", "chars"]
+            "character": ["characters", "char", "chars"],
+            "duration": ["time", "length"]
         })
 
         self.groups = {
             "message": self._group_pre_message,
             "conversation": self._group_pre_conversation,
-            "day": None,
-            "week": None,
-            "person": None
+            "day": self._group_pre_day,
+            "week": self._group_pre_week,
+            "sender": self._group_pre_sender
         }
         self.group_subs = self._invert_dict({
             "message": ["messages", "msg", "msgs"],
             "conversation": ["conversations", "conv", "convs"],
-            "week": ["wk"]
+            "day": [],
+            "week": ["wk"],
+            "sender": ["person"]
         })
 
     @staticmethod
@@ -209,6 +213,15 @@ class ChatAnalysis:  # stored as GenericChat.analyze
     def _group_pre_conversation(self, df):
         return df
 
+    def _group_pre_day(self, df):
+        return utils.get_day_of_messages(df)
+
+    def _group_pre_week(self, df):
+        return utils.get_week_of_messages(df)
+
+    def _group_pre_sender(self, df):
+        return df
+
     #####################
     # Target from group #
     #####################
@@ -228,6 +241,9 @@ class ChatAnalysis:  # stored as GenericChat.analyze
 
     def _target_character(self, df):
         return df.content.str.len().sum()
+
+    def _target_duration(self, df):
+        return df.timestamp.max() - df.timestamp.min()
 
     ######################
     # Operation on group #
