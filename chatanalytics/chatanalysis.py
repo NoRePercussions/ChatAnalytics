@@ -75,6 +75,8 @@ class ChatAnalysis:  # stored as GenericChat.analyze
             "conversation": self._group_pre_conversation,
             "day": self._group_pre_day,
             "week": self._group_pre_week,
+            "month": self._group_pre_month,
+            "year": self._group_pre_year,
             "sender": self._group_pre_sender
         }
         self.group_subs = self._invert_dict({
@@ -82,6 +84,8 @@ class ChatAnalysis:  # stored as GenericChat.analyze
             "conversation": ["conversations", "conv", "convs"],
             "day": [],
             "week": ["wk"],
+            "month": ["mo"],
+            "year": ["yr"],
             "sender": ["person"]
         })
 
@@ -217,6 +221,12 @@ class ChatAnalysis:  # stored as GenericChat.analyze
 
     def _group_pre_week(self, df):
         return utils.get_week_of_messages(df)
+
+    def _group_pre_month(self, df):
+        return utils.get_month_of_messages(df)
+
+    def _group_pre_year(self, df):
+        return utils.get_year_of_messages(df)
 
     def _group_pre_sender(self, df):
         return df

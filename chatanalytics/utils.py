@@ -51,6 +51,26 @@ def get_week_of_messages(messages):
     return messages.assign(week=weeks)
 
 
+def get_first_day_of_month(dt):
+    """Gets the date of the previous monday"""
+    return dt.date().replace(day=1)
+
+
+def get_month_of_messages(messages):
+    months = messages.apply(lambda row: get_first_day_of_month(row["timestamp"]), axis=1)
+    return messages.assign(month=months)
+
+
+def get_first_day_of_year(dt):
+    """Gets the date of the previous monday"""
+    return dt.date().replace(day=1, month=1)
+
+
+def get_year_of_messages(messages):
+    years = messages.apply(lambda row: get_first_day_of_year(row["timestamp"]), axis=1)
+    return messages.assign(year=years)
+
+
 def get_day_number(dt):
     """Gets days since the epoch 1/1/1970"""
     return (dt - epoch).days
