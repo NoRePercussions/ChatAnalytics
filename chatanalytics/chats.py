@@ -7,11 +7,12 @@ from os.path import isfile
 
 import pandas as pd
 from pandas.util import hash_pandas_object
+from tzlocal import get_localzone, get_localzone_name
+from pytz import UnknownTimeZoneError
 import functools
 
 from .chatanalysis import ChatAnalysis
-from tzlocal import get_localzone, get_localzone_name
-from pytz import UnknownTimeZoneError
+from .chatgraph import ChatGraph
 
 pd.set_option('display.max_columns', None)
 
@@ -29,8 +30,7 @@ class GenericChat:
         self._timezone = self._get_localtime()
 
         self.analyze = ChatAnalysis(self)
-
-        self.analyze = ChatAnalysis(self)
+        self.graph = ChatGraph(self)
 
     def load(self, path: str, _post_process: bool = True) -> None:
         """Loads a single JSON message file
@@ -201,9 +201,6 @@ class GenericChat:
     def _reset_hash(self):
         """Reset hash if data changes"""
         self.hash = None
-
-    def _update_analyze_references(self):
-        self.analyze._update_references
 
     @staticmethod
     def _get_localtime():
