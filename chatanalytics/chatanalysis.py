@@ -1,8 +1,10 @@
 # Manages analysis
 # NRP 21
+import warnings
+
 import pandas as pd
 
-from . import utils
+from . import utils, autocorrect
 
 from datetime import timedelta
 import re
@@ -100,6 +102,9 @@ class ChatAnalysis:  # stored as GenericChat.analyze
     ################
 
     def __call__(self, query, *args, **kwargs):
+        dist, query = autocorrect.correct_passage(query)
+        if dist > 0:
+            warnings.warn(f"\nQuery corrected to: '{query}'")
         args = self._parse_query(query)
         return self._execute_query(*args)
 

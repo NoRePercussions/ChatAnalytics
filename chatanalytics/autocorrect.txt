@@ -1,0 +1,24 @@
+mean
+median
+mode
+range
+total
+maximum
+minimum
+average
+medial
+modal
+standard deviation
+message messages
+conversation conversations
+word words
+character characters
+duration
+time
+length
+day
+week
+month
+year
+sender
+person
