@@ -9,12 +9,16 @@ import pandas as pd
 from pandas.util import hash_pandas_object
 from tzlocal import get_localzone, get_localzone_name
 from pytz import UnknownTimeZoneError
+import functools
+
+from .chatanalysis import ChatAnalysis
+from .chatgraph import ChatGraph
 
 pd.set_option('display.max_columns', None)
 
 
 class GenericChat:
-    """..Contains data from a chat with one or more people"""
+    """Contains data from a chat with one or more people"""
 
     _message_columns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
     _conversation_columns = ["startMessage", "endMessage", "start_timestamp", "end_timestamp"]
@@ -24,6 +28,9 @@ class GenericChat:
         self.conversations = pd.DataFrame(columns=self._conversation_columns)
         self.hash = None
         self._timezone = self._get_localtime()
+
+        self.analyze = ChatAnalysis(self)
+        self.graph = ChatGraph(self)
 
     def load(self, path: str, _post_process: bool = True) -> None:
         """Loads a single JSON message file
