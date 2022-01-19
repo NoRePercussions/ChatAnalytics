@@ -5,6 +5,8 @@ import re
 import os
 from os import walk
 from os.path import isfile
+from typing import List
+import warnings
 
 import pandas as pd
 import pytz_deprecation_shim
@@ -35,6 +37,7 @@ class GenericChat:
     _processed: bool
     _hash: int or None
     _timezone: str or pytz_deprecation_shim._impl__PytzShimTimezone
+    _loaded_files: List[str]
 
     def __init__(self):
         self._messages = pd.DataFrame(columns=self._message_columns)
@@ -46,6 +49,7 @@ class GenericChat:
         self._processed = False
         self._hash = None
         self._timezone = self._get_localtime()
+        self._loaded_files = []
 
     #############
     # Accessors #
@@ -67,7 +71,7 @@ class GenericChat:
     # Public data methods #
     #######################
 
-    def load(self, path: str):
+    def load(self, path: str, allow_repeat_load: bool = True):
         """Loads a single JSON message file
 
         :param path: the name of the file to load
@@ -77,18 +81,28 @@ class GenericChat:
 
         self._reset_cache()  # Altering data!
 
-        # Todo: implement list of what files are already loaded
-            # Check abspath
+        # Todo: custom error types
+        # Todo: restructure unit tests
 
         if self._type_is_messenger(path):
+            if not allow_repeat_load and path in self._loaded_files:
+                return self
+            self._loaded_files += [os.path.abspath(path)]
+
             with open(path, "r", encoding='utf-8') as file:
                 data = json.load(file)
+
             df = self._messenger_pre_process(data)
         elif parent := self._type_is_discord(path):
+            if not allow_repeat_load and parent in self._loaded_files:
+                return self
+            self._loaded_files += [os.path.abspath(parent)]
+
             with open(parent + "/channel.json", "r", encoding='utf-8') as file:
                 channel = json.load(file)
             with open(parent + "/messages.csv", "r", encoding='utf-8') as file:
                 messages = pd.read_csv(file)
+
             df = self._discord_pre_process(channel, messages)
         else:
             raise FileNotFoundError("Cannot auto-type file")
@@ -118,7 +132,7 @@ class GenericChat:
             for f in filenames:
                 if self._type_is_discord(f"{dirpath}/{f}") \
                         or self._type_is_discord(f"{dirpath}/{f}"):
-                    self.load(dirpath + "/" + f)
+                    self.load(dirpath + "/" + f, allow_repeat_load=False)
             if not do_walk:
                 break
 
