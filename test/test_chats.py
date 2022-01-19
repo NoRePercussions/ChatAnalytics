@@ -12,7 +12,7 @@ class DiscordChatTest(unittest.TestCase):
     timezone = "Asia/Tokyo"
 
     def test_direct_message_import(self):
-        group = chatanalytics.DiscordChat()
+        group = chatanalytics.GenericChat()
         group.set_timezone(self.timezone)
         group.load(self.raw_data_path + self.direct_message_path)
         with open(self.baseline_path + self.direct_message_path + ".p", "rb") as f:
@@ -21,7 +21,7 @@ class DiscordChatTest(unittest.TestCase):
             self.assertEqual(group, baseline)
 
     def test_group_message_import(self):
-        group = chatanalytics.DiscordChat()
+        group = chatanalytics.GenericChat()
         group.set_timezone(self.timezone)
         group.load(self.raw_data_path + self.group_message_path)
         with open(self.baseline_path + self.group_message_path + ".p", "rb") as f:
@@ -30,7 +30,7 @@ class DiscordChatTest(unittest.TestCase):
             self.assertEqual(group, baseline)
 
     def test_server_message_import(self):
-        group = chatanalytics.DiscordChat()
+        group = chatanalytics.GenericChat()
         group.set_timezone(self.timezone)
         group.load(self.raw_data_path + self.server_message_path)
         with open(self.baseline_path + self.server_message_path + ".p", "rb") as f:
@@ -39,7 +39,7 @@ class DiscordChatTest(unittest.TestCase):
             self.assertEqual(group, baseline)
 
     def test_batch_import(self):
-        group = chatanalytics.DiscordChat()
+        group = chatanalytics.GenericChat()
         group.batch_load(self.raw_data_path)
         group.set_timezone(self.timezone)
         with open(self.baseline_path + "chat_batch.p", "rb") as f:
@@ -48,17 +48,17 @@ class DiscordChatTest(unittest.TestCase):
             self.assertEqual(group, baseline)
 
     def test_repeated_import(self):
-        chat = chatanalytics.DiscordChat()
+        chat = chatanalytics.GenericChat()
         chat.set_timezone(self.timezone)
         chat.load(self.raw_data_path + self.direct_message_path)
         chat.load(self.raw_data_path + self.group_message_path)
         chat.load(self.raw_data_path + self.server_message_path)
 
     def test_batch_import_equals_import(self):
-        chatA = chatanalytics.DiscordChat()
+        chatA = chatanalytics.GenericChat()
         chatA.batch_load(self.raw_data_path)
 
-        chatB = chatanalytics.DiscordChat()
+        chatB = chatanalytics.GenericChat()
         chatB.load(self.raw_data_path + self.direct_message_path)
         chatB.load(self.raw_data_path + self.group_message_path)
         chatB.load(self.raw_data_path + self.server_message_path)
@@ -76,7 +76,7 @@ class MessengerChatTest(unittest.TestCase):
     timezone = "Asia/Tokyo"
 
     def test_direct_message_import(self):
-        group = chatanalytics.MessengerChat()
+        group = chatanalytics.GenericChat()
         group.set_timezone(self.timezone)
         group.load(self.raw_data_path + self.direct_message_path + self.end)
         with open(self.baseline_path + self.direct_message_path + ".p", "rb") as f:
@@ -85,7 +85,7 @@ class MessengerChatTest(unittest.TestCase):
             self.assertEqual(group, baseline)
 
     def test_group_message_import(self):
-        group = chatanalytics.MessengerChat()
+        group = chatanalytics.GenericChat()
         group.set_timezone(self.timezone)
         group.load(self.raw_data_path + self.group_message_path + self.end)
         with open(self.baseline_path + self.group_message_path + ".p", "rb") as f:
@@ -94,7 +94,7 @@ class MessengerChatTest(unittest.TestCase):
             self.assertEqual(group, baseline)
 
     def test_batch_import(self):
-        group = chatanalytics.MessengerChat()
+        group = chatanalytics.GenericChat()
         group.set_timezone(self.timezone)
         group.batch_load(self.raw_data_path)
         with open(self.baseline_path + "chat_batch.p", "rb") as f:
@@ -103,16 +103,16 @@ class MessengerChatTest(unittest.TestCase):
             self.assertEqual(group, baseline)
 
     def test_repeated_import(self):
-        chat = chatanalytics.MessengerChat()
+        chat = chatanalytics.GenericChat()
         chat.set_timezone(self.timezone)
         chat.load(self.raw_data_path + self.direct_message_path + self.end)
         chat.load(self.raw_data_path + self.group_message_path + self.end)
 
     def test_batch_import_equals_import(self):
-        chatA = chatanalytics.MessengerChat()
+        chatA = chatanalytics.GenericChat()
         chatA.batch_load(self.raw_data_path)
 
-        chatB = chatanalytics.MessengerChat()
+        chatB = chatanalytics.GenericChat()
         chatB.load(self.raw_data_path + self.direct_message_path + self.end)
         chatB.load(self.raw_data_path + self.group_message_path + self.end)
 

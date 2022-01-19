@@ -2,13 +2,14 @@
 # TS | NRP
 import json
 import re
+import os
 from os import walk
 from os.path import isfile
 
 import pandas as pd
 import pytz_deprecation_shim
 from pandas.util import hash_pandas_object
-from tzlocal import get_localzone, get_localzone_name
+import tzlocal
 from pytz import UnknownTimeZoneError
 import functools
 
@@ -55,10 +56,23 @@ class GenericChat:
 
         self._reset_hash()  # Altering data!
 
-        with open(path, "r", encoding='utf-8') as file:
-            data = json.load(file)
+        # Todo: implement lazy postprocessing
+            # Todo: hide messages and conversations between accessor
+        # Todo: implement list of what files are already loaded
 
-        df = self._pre_process(data)
+        if self._type_is_messenger(path):
+            with open(path, "r", encoding='utf-8') as file:
+                data = json.load(file)
+            df = self._messenger_pre_process(data)
+        elif parent := self._type_is_discord(path):
+            with open(parent + "/channel.json", "r", encoding='utf-8') as file:
+                channel = json.load(file)
+            with open(parent + "/messages.csv", "r", encoding='utf-8') as file:
+                messages = pd.read_csv(file)
+            df = self._discord_pre_process(channel, messages)
+        else:
+            raise FileNotFoundError("Cannot auto-type file")
+
         self.messages = pd.concat([self.messages, df])
 
         # Easy enough to completely regroup
@@ -84,9 +98,10 @@ class GenericChat:
             self.load(path)
             return
 
-        for (dirpath, dirnames, filenames) in walk(path):
+        for (dirpath, dirnames, filenames) in os.walk(path):
             for f in filenames:
-                if "message" in f and ".json" in f:
+                if self._type_is_discord(f"{dirpath}/{f}") \
+                        or self._type_is_discord(f"{dirpath}/{f}"):
                     self.load(dirpath + "/" + f, _post_process=False)
             if not do_walk:
                 break
@@ -145,6 +160,41 @@ class GenericChat:
     # Internal Functions #
     ######################
 
+    def _type_is_messenger(self, path: str) -> False or str:
+        if not os.path.isfile(path):
+            return False
+
+        _, extension = os.path.splitext(path)
+        if extension != ".json":
+            return False
+
+        with open(path, "r", encoding='utf-8') as file:
+            data = json.load(file)
+        if "magic_words" not in data:
+            return False
+
+        return path
+
+    def _type_is_discord(self, path: str) -> False or str:
+        if not os.path.isfile(path):
+            if not os.path.isdir(path):
+                return False
+            if "messages.csv" and "channel.json" in os.listdir(path):
+                return path
+
+        if path.endswith("channel.json"):
+            parent = os.path.dirname(path)
+            if "messages.csv" in os.listdir(parent):
+                return parent
+        elif path.endswith("messages.csv"):
+            parent = os.path.dirname(path)
+            if "channel.json" in os.listdir(parent):
+                return parent
+
+        return False
+
+
+
     def _pre_process(self, data: [dict, pd.DataFrame]) -> pd.DataFrame:
         """Processes data before adding to data record
 
@@ -163,6 +213,81 @@ class GenericChat:
         df = df.assign(conversation=0)
 
         df = df.drop(columns=[col for col in df if col not in self._message_columns])
+        return df
+
+    def _messenger_pre_process(self, data: [dict, pd.DataFrame]) -> pd.DataFrame:
+        """Processes data before adding to data record
+
+        Creates a dataframe, orders the data,
+        sets source column, and removes extra columns
+
+        :param data: dict or DataFrame with data
+        :return: Dataframe of processed data"""
+        df = pd.DataFrame(data["messages"])
+        df = df.rename(columns={"sender_name": "sender"})
+        df = df.assign(channel=data["title"])
+
+        # Remove extraneous messages
+        df = df[
+            (df['type'] == "Generic") &
+            (df['is_unsent'] == False) &
+            (~df['content'].isna())].copy()
+
+        # Swap to using DateTimes
+        df['timestamp'] = pd.to_datetime(df['timestamp_ms'], unit="ms") \
+            .dt.tz_localize('UTC') \
+            .dt.tz_convert(self._timezone)
+
+        # Drop extra columns
+        df = df.drop(columns=[col for col in df if col not in self._message_columns])
+
+        # Reindex and label
+        if df.shape[0] > 1 and df.iloc[0].loc["timestamp"] > df.iloc[1].loc["timestamp"]:
+            df = df.reindex(index=df.index[::-1])
+        df = df.assign(source="Facebook Messenger")
+        df = df.assign(conversation=0)
+
+        return df
+
+    def _discord_pre_process(self, channel, messages) -> pd.DataFrame:
+        """Processes data before adding to data record
+
+        Creates a dataframe, orders the data,
+        sets source column, and removes extra columns
+
+        :param channel: Channel information
+        :param messages: Message data
+        :return: Dataframe of processed data"""
+        df = pd.DataFrame(messages)
+        df = df.rename(columns={"Contents": "content"})
+        df = df.assign(sender="user")
+
+        if "guild" in channel.keys():
+            df = df.assign(channel=f"{channel['guild']['name']}: #{channel['name']}")
+        elif "recipients" in channel.keys():
+            df = df.assign(channel=", ".join(channel["recipients"]))
+        else:
+            df = df.assign(channel=channel["id"])
+
+        # Remove extraneous messages
+        df = df[
+            (df['content'] != "") &
+            (~df['content'].isna())].copy()
+
+        # Swap to using DateTimes
+        timestamps = pd.to_datetime(df['Timestamp'])
+        if timestamps.dt.tz is None:
+            timestamps = timestamps.dt.tz_localize('UTC')
+        df["timestamp"] = timestamps.dt.tz_convert(self._timezone)
+
+        # Drop extra columns
+        df = df.drop(columns=[col for col in df if col not in self._message_columns])
+
+        # Reindex and label
+        if df.shape[0] > 1 and df.iloc[0].loc["timestamp"] > df.iloc[1].loc["timestamp"]:
+            df = df.reindex(index=df.index[::-1])
+        df = df.assign(source="Discord")
+        df = df.assign(conversation=0)
         return df
 
     def _post_process(self):
@@ -232,9 +357,9 @@ class GenericChat:
         # Unix may not support get_localzone_name,
         # but otherwise avoid pytz get_localzone
         try:
-            return get_localzone_name()
+            return tzlocal.get_localzone_name()
         except UnknownTimeZoneError:
-            return get_localzone()
+            return tzlocal.get_localzone()
 
     #####################
     # Special Functions #
@@ -252,168 +377,5 @@ class GenericChat:
             messages_hash = hash_pandas_object(self.messages).sum()  # unordered hashes
             conversations_hash = hash_pandas_object(self.conversations).sum()
             self._hash = hash(str(messages_hash) + str(conversations_hash))
+            # Todo: change to hashing a list of these
         return self._hash
-
-
-class MessengerChat(GenericChat):
-    """Contains data on Facebook Messenger chats"""
-
-    pattern = re.compile(r"message_\d+\.json")
-
-    def batch_load(self, path: str, do_walk: bool = True, _post_process: bool = True) -> None:
-        """Load a directory of data files
-
-        Lists or walks through the directory and import *all* files
-
-        :param path: The path to the directory
-        :param do_walk: whether to walk through the directory,
-        :param _post_process: whether to postprocess data, default True
-        :return: None
-        """
-        if isfile(path):
-            self.load(path)
-            return
-
-        for (dirpath, dirnames, filenames) in walk(path):
-            for f in filenames:
-                if self.pattern.match(f):
-                    self.load(dirpath + "/" + f, _post_process=False)
-            if not do_walk:
-                break
-
-        if _post_process:
-            self._post_process()
-
-    ######################
-    # Internal Functions #
-    ######################
-
-    def _pre_process(self, data):
-        """Processes data before adding to data record
-
-        Creates a dataframe, orders the data,
-        sets source column, and removes extra columns
-
-        :param data: dict or DataFrame with data
-        :return: Dataframe of processed data"""
-        df = pd.DataFrame(data["messages"])
-        df = df.rename(columns={"sender_name": "sender"})
-        df = df.assign(channel=data["title"])
-
-        # Remove extraneous messages
-        df = df[
-            (df['type'] == "Generic") &
-            (df['is_unsent'] == False) &
-            (~df['content'].isna())].copy()
-
-        # Swap to using DateTimes
-        df['timestamp'] = pd.to_datetime(df['timestamp_ms'], unit="ms") \
-            .dt.tz_localize('UTC') \
-            .dt.tz_convert(self._timezone)
-
-        # Drop extra columns
-        df = df.drop(columns=[col for col in df if col not in self._message_columns])
-
-        # Reindex and label
-        if df.shape[0] > 1 and df.iloc[0].loc["timestamp"] > df.iloc[1].loc["timestamp"]:
-            df = df.reindex(index=df.index[::-1])
-        df = df.assign(source="Facebook Messenger")
-        df = df.assign(conversation=0)
-        return df
-
-
-class DiscordChat(GenericChat):
-    """Contains data on Discord chats"""
-
-    def load(self, path: str, _post_process: bool = True) -> None:
-        """Loads data for a single channel from discord
-
-        Loads messages.csv and channel.json files
-        :param path: the directory of the file to load,
-                        or path to either file
-        :param _post_process: whether to postprocess data, default True
-        :return: None
-        """
-
-        if path.endswith("channel.json") or path.endswith("messages.csv"):
-            path = path[:-12]
-
-        with open(path + "/" + "channel.json", "r", encoding='utf-8') as file:
-            channel = json.load(file)
-        with open(path + "/" + "messages.csv", "r", encoding='utf-8') as file:
-            messages = pd.read_csv(file)
-
-        df = self._pre_process(channel, messages)
-        self.messages = pd.concat([self.messages, df])
-
-        # Easy enough to completely regroup
-        if _post_process:
-            self._post_process()
-
-    def batch_load(self, path: str, do_walk: bool = True, _post_process: bool = True) -> None:
-        """Load a directory of data files
-
-        Lists or walks through the directory and import *all* files
-
-        :param path: The path to the directory
-        :param do_walk: whether to walk through the directory,
-        :param _post_process: whether to postprocess data, default True
-        :return: None
-        """
-        if isfile(path):
-            self.load(path)
-            return
-
-        for (dirpath, dirnames, filenames) in walk(path):
-            if "messages.csv" in filenames and "channel.json" in filenames:
-                self.load(dirpath, _post_process=False)
-            if not do_walk:
-                break
-
-        if _post_process:
-            self._post_process()
-
-    ######################
-    # Internal Functions #
-    ######################
-
-    def _pre_process(self, channel, messages):
-        """Processes data before adding to data record
-
-        Creates a dataframe, orders the data,
-        sets source column, and removes extra columns
-
-        :param channel: Channel information
-        :param messages: Message data
-        :return: Dataframe of processed data"""
-        df = pd.DataFrame(messages)
-        df = df.rename(columns={"Contents": "content"})
-        df = df.assign(sender="user")
-
-        if "guild" in channel.keys():
-            df = df.assign(channel=f"{channel['guild']['name']}: #{channel['name']}")
-        elif "recipients" in channel.keys():
-            df = df.assign(channel=", ".join(channel["recipients"]))
-        else:
-            df = df.assign(channel=channel["id"])
-
-        # Remove extraneous messages
-        df = df[
-            (df['content'] != "") &
-            (~df['content'].isna())].copy()
-
-        # Swap to using DateTimes
-        timestamps = pd.to_datetime(df['Timestamp'])
-        if timestamps.dt.tz is None:
-            timestamps = timestamps.dt.tz_localize('UTC')
-        df["timestamp"] = timestamps.dt.tz_convert(self._timezone)
-
-        # Drop extra columns
-        df = df.drop(columns=[col for col in df if col not in self._message_columns])
-
-        # Reindex and label
-        if df.shape[0] > 1 and df.iloc[0].loc["timestamp"] > df.iloc[1].loc["timestamp"]:
-            df = df.reindex(index=df.index[::-1])
-        df = df.assign(source="Discord")
-        df = df.assign(conversation=0)
-        return df
