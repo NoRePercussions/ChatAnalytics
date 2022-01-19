@@ -6,11 +6,13 @@ from os import walk
 from os.path import isfile
 
 import pandas as pd
+import pytz_deprecation_shim
 from pandas.util import hash_pandas_object
 from tzlocal import get_localzone, get_localzone_name
 from pytz import UnknownTimeZoneError
 import functools
 
+import chatanalytics.chats
 from .chatanalysis import ChatAnalysis
 from .chatgraph import ChatGraph
 
@@ -23,16 +25,27 @@ class GenericChat:
     _message_columns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
     _conversation_columns = ["startMessage", "endMessage", "start_timestamp", "end_timestamp"]
 
+    messages: pd.DataFrame
+    conversations: pd.DataFrame
+
+    _analyze_backend: ChatAnalysis
+    _graph_backend: ChatGraph
+
+    _processed: bool
+    _hash: int or None
+    _timezone: str or pytz_deprecation_shim._impl__PytzShimTimezone
+
     def __init__(self):
         self.messages = pd.DataFrame(columns=self._message_columns)
         self.conversations = pd.DataFrame(columns=self._conversation_columns)
-        self.hash = None
+
+        self._analyze_backend = ChatAnalysis(self)
+        self._graph_backend = ChatGraph(self)
+
+        self._hash = None
         self._timezone = self._get_localtime()
 
-        self.analyze = ChatAnalysis(self)
-        self.graph = ChatGraph(self)
-
-    def load(self, path: str, _post_process: bool = True) -> None:
+    def load(self, path: str, _post_process: bool = True) -> chatanalytics.chats.GenericChat:
         """Loads a single JSON message file
 
         :param path: the name of the file to load
@@ -52,7 +65,9 @@ class GenericChat:
         if _post_process:
             self._post_process()
 
-    def batch_load(self, path: str, do_walk: bool = False, _post_process: bool = True) -> None:
+        return self
+
+    def batch_load(self, path: str, do_walk: bool = False, _post_process: bool = True) -> chatanalytics.chats.GenericChat:
         """Load a directory of data files
 
         Lists or walks through the directory and import *all* files
@@ -79,7 +94,9 @@ class GenericChat:
         if _post_process:
             self._post_process()
 
-    def clear(self) -> None:
+        return self
+
+    def clear(self) -> chatanalytics.chats.GenericChat:
         """Clears all messages in the conversation
 
         :return: None
@@ -89,14 +106,18 @@ class GenericChat:
 
         self.messages = self.messages.iloc[0:0]
 
-    def regroup_all(self) -> None:
+        return self
+
+    def regroup_all(self) -> chatanalytics.chats.GenericChat:
         """Sorts and groups all messages
 
         :return: None
         """
         self._post_process()
 
-    def set_timezone(self, timezone=None):
+        return self
+
+    def set_timezone(self, timezone=None) -> chatanalytics.chats.GenericChat:
         """Sets the timezone to use
 
         :param timezone: None, tz name (str), or tzlocal/pytz object"""
@@ -112,15 +133,19 @@ class GenericChat:
             self.conversations['start_timestamp'] = self.conversations['start_timestamp'].dt.tz_convert(self._timezone)
             self.conversations['end_timestamp'] = self.conversations['end_timestamp'].dt.tz_convert(self._timezone)
 
-    def reset_timezone(self):
+        return self
+
+    def reset_timezone(self) -> chatanalytics.chats.GenericChat:
         """Sets the timezone to local time"""
         self.set_timezone(timezone=None)
+
+        return self
 
     ######################
     # Internal Functions #
     ######################
 
-    def _pre_process(self, data: [dict, pd.DataFrame]):
+    def _pre_process(self, data: [dict, pd.DataFrame]) -> pd.DataFrame:
         """Processes data before adding to data record
 
         Creates a dataframe, orders the data,
@@ -200,7 +225,7 @@ class GenericChat:
 
     def _reset_hash(self):
         """Reset hash if data changes"""
-        self.hash = None
+        self._hash = None
 
     @staticmethod
     def _get_localtime():
@@ -223,11 +248,11 @@ class GenericChat:
                 and self.conversations.equals(other.conversations))
 
     def __hash__(self):
-        if self.hash is None:
+        if self._hash is None:
             messages_hash = hash_pandas_object(self.messages).sum()  # unordered hashes
             conversations_hash = hash_pandas_object(self.conversations).sum()
-            self.hash = hash(str(messages_hash) + str(conversations_hash))
-        return self.hash
+            self._hash = hash(str(messages_hash) + str(conversations_hash))
+        return self._hash
 
 
 class MessengerChat(GenericChat):
