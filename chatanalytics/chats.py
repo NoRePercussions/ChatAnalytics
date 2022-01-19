@@ -45,7 +45,7 @@ class GenericChat:
         self._hash = None
         self._timezone = self._get_localtime()
 
-    def load(self, path: str, _post_process: bool = True) -> chatanalytics.chats.GenericChat:
+    def load(self, path: str, _post_process: bool = True):
         """Loads a single JSON message file
 
         :param path: the name of the file to load
@@ -67,7 +67,7 @@ class GenericChat:
 
         return self
 
-    def batch_load(self, path: str, do_walk: bool = False, _post_process: bool = True) -> chatanalytics.chats.GenericChat:
+    def batch_load(self, path: str, do_walk: bool = False, _post_process: bool = True):
         """Load a directory of data files
 
         Lists or walks through the directory and import *all* files
@@ -96,7 +96,7 @@ class GenericChat:
 
         return self
 
-    def clear(self) -> chatanalytics.chats.GenericChat:
+    def clear(self):
         """Clears all messages in the conversation
 
         :return: None
@@ -108,7 +108,7 @@ class GenericChat:
 
         return self
 
-    def regroup_all(self) -> chatanalytics.chats.GenericChat:
+    def regroup_all(self):
         """Sorts and groups all messages
 
         :return: None
@@ -117,7 +117,7 @@ class GenericChat:
 
         return self
 
-    def set_timezone(self, timezone=None) -> chatanalytics.chats.GenericChat:
+    def set_timezone(self, timezone=None):
         """Sets the timezone to use
 
         :param timezone: None, tz name (str), or tzlocal/pytz object"""
@@ -135,7 +135,7 @@ class GenericChat:
 
         return self
 
-    def reset_timezone(self) -> chatanalytics.chats.GenericChat:
+    def reset_timezone(self):
         """Sets the timezone to local time"""
         self.set_timezone(timezone=None)
 
