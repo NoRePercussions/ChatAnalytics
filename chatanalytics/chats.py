@@ -13,7 +13,7 @@ import tzlocal
 from pytz import UnknownTimeZoneError
 import functools
 
-import chatanalytics.chats
+import chatanalytics.chats  # Todo: remove in cleanup
 from .chatanalysis import ChatAnalysis
 from .chatgraph import ChatGraph
 
@@ -26,8 +26,8 @@ class GenericChat:
     _message_columns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
     _conversation_columns = ["startMessage", "endMessage", "start_timestamp", "end_timestamp"]
 
-    messages: pd.DataFrame
-    conversations: pd.DataFrame
+    _messages: pd.DataFrame
+    _conversations: pd.DataFrame
 
     _analyze_backend: ChatAnalysis
     _graph_backend: ChatGraph
@@ -37,16 +37,37 @@ class GenericChat:
     _timezone: str or pytz_deprecation_shim._impl__PytzShimTimezone
 
     def __init__(self):
-        self.messages = pd.DataFrame(columns=self._message_columns)
-        self.conversations = pd.DataFrame(columns=self._conversation_columns)
+        self._messages = pd.DataFrame(columns=self._message_columns)
+        self._conversations = pd.DataFrame(columns=self._conversation_columns)
 
         self._analyze_backend = ChatAnalysis(self)
         self._graph_backend = ChatGraph(self)
 
+        self._processed = False
         self._hash = None
         self._timezone = self._get_localtime()
 
-    def load(self, path: str, _post_process: bool = True):
+    #############
+    # Accessors #
+    #############
+
+    @property
+    def messages(self):
+        if not self._processed:
+            self._post_process()
+        return self._messages
+
+    @property
+    def conversations(self):
+        if not self._processed:
+            self._post_process()
+        return self._conversations
+
+    #######################
+    # Public data methods #
+    #######################
+
+    def load(self, path: str):
         """Loads a single JSON message file
 
         :param path: the name of the file to load
@@ -54,11 +75,10 @@ class GenericChat:
         :return: None
         """
 
-        self._reset_hash()  # Altering data!
+        self._reset_cache()  # Altering data!
 
-        # Todo: implement lazy postprocessing
-            # Todo: hide messages and conversations between accessor
         # Todo: implement list of what files are already loaded
+            # Check abspath
 
         if self._type_is_messenger(path):
             with open(path, "r", encoding='utf-8') as file:
@@ -73,15 +93,11 @@ class GenericChat:
         else:
             raise FileNotFoundError("Cannot auto-type file")
 
-        self.messages = pd.concat([self.messages, df])
-
-        # Easy enough to completely regroup
-        if _post_process:
-            self._post_process()
+        self._messages = pd.concat([self._messages, df])
 
         return self
 
-    def batch_load(self, path: str, do_walk: bool = False, _post_process: bool = True):
+    def batch_load(self, path: str, do_walk: bool = False):
         """Load a directory of data files
 
         Lists or walks through the directory and import *all* files
@@ -92,7 +108,7 @@ class GenericChat:
         :return: None
         """
 
-        self._reset_hash()  # Altering data!
+        self._reset_cache()  # Altering data!
 
         if isfile(path):
             self.load(path)
@@ -102,12 +118,9 @@ class GenericChat:
             for f in filenames:
                 if self._type_is_discord(f"{dirpath}/{f}") \
                         or self._type_is_discord(f"{dirpath}/{f}"):
-                    self.load(dirpath + "/" + f, _post_process=False)
+                    self.load(dirpath + "/" + f)
             if not do_walk:
                 break
-
-        if _post_process:
-            self._post_process()
 
         return self
 
@@ -117,18 +130,9 @@ class GenericChat:
         :return: None
         """
 
-        self._reset_hash()  # Altering data!
+        self._reset_cache()  # Altering data!
 
-        self.messages = self.messages.iloc[0:0]
-
-        return self
-
-    def regroup_all(self):
-        """Sorts and groups all messages
-
-        :return: None
-        """
-        self._post_process()
+        self._messages = self._messages.iloc[0:0]
 
         return self
 
@@ -136,17 +140,17 @@ class GenericChat:
         """Sets the timezone to use
 
         :param timezone: None, tz name (str), or tzlocal/pytz object"""
-        self._reset_hash()
+        self._reset_cache()
 
         if timezone is None:
             self._timezone = self._get_localtime()
         else:
             self._timezone = timezone
 
-        if not self.messages.empty:
-            self.messages['timestamp'] = self.messages['timestamp'].dt.tz_convert(self._timezone)
-            self.conversations['start_timestamp'] = self.conversations['start_timestamp'].dt.tz_convert(self._timezone)
-            self.conversations['end_timestamp'] = self.conversations['end_timestamp'].dt.tz_convert(self._timezone)
+        if not self._messages.empty:
+            self._messages['timestamp'] = self._messages['timestamp'].dt.tz_convert(self._timezone)
+            self._conversations['start_timestamp'] = self._conversations['start_timestamp'].dt.tz_convert(self._timezone)
+            self._conversations['end_timestamp'] = self._conversations['end_timestamp'].dt.tz_convert(self._timezone)
 
         return self
 
@@ -203,7 +207,7 @@ class GenericChat:
 
         :param data: dict or DataFrame with data
         :return: Dataframe of processed data"""
-        self._reset_hash()  # Altering data!
+        self._reset_cache()  # Altering data!
 
         df = pd.DataFrame(data)
 
@@ -296,18 +300,14 @@ class GenericChat:
         Sorts all messages by timestamp and then groups conversations
 
         :return: None"""
-        self._reset_hash()  # Altering data!
+        self._reset_cache()  # Altering data!
 
-        self._sort()
+        self._messages = self._messages.sort_values("timestamp", ignore_index=True)
+        self._messages = self._messages.drop_duplicates()
+
         self._make_conversations()
 
-    def _sort(self):
-        """Sorts all messages by timestamp
-
-        :return: None"""
-        self._reset_hash()  # Altering data!
-
-        self.messages = self.messages.sort_values("timestamp", ignore_index=True)
+        self._processed = True
 
     def _make_conversations(self, df=None):
         """Groups messages into conversations
@@ -317,10 +317,10 @@ class GenericChat:
         then makes conversation dataframe
 
         :return: None"""
-        self._reset_hash()  # Altering data!
+        self._reset_cache()  # Altering data!
 
         if df is None:
-            df = self.messages
+            df = self._messages
 
         # Find all timing gaps of an hour or more
         gaps = (df.timestamp.diff() > pd.Timedelta(hours=1)) | (~df.channel.eq(df.channel.shift()))
@@ -335,22 +335,23 @@ class GenericChat:
         changes = gaps[gaps].index.to_series().reset_index(drop=True)
 
         # Reset conversations so previous setup disappears
-        self.conversations = self.conversations.iloc[0:0]
+        self._conversations = self._conversations.iloc[0:0]
         # Assign startMessage and endMessage, including start and end indices
         # Note: converting to lists is un-ideal but more readable than concatenation
-        self.conversations["startMessage"] = [0] + changes.tolist()
-        self.conversations["endMessage"] = (changes - 1).tolist() + [self.messages.last_valid_index()]
+        self._conversations["startMessage"] = [0] + changes.tolist()
+        self._conversations["endMessage"] = (changes - 1).tolist() + [self._messages.last_valid_index()]
 
         # Start and end timestamps - shift truth table, index, consolidate
         starts = gaps
         starts[0] = True
-        self.conversations["start_timestamp"] = self.messages.timestamp[starts].reset_index(drop=True)
+        self._conversations["start_timestamp"] = self._messages.timestamp[starts].reset_index(drop=True)
         ends = gaps.shift(periods=-1, fill_value=True)
-        self.conversations["end_timestamp"] = self.messages.timestamp[ends].reset_index(drop=True)
+        self._conversations["end_timestamp"] = self._messages.timestamp[ends].reset_index(drop=True)
 
-    def _reset_hash(self):
-        """Reset hash if data changes"""
+    def _reset_cache(self):
+        """Reset hash and internals if data changes"""
         self._hash = None
+        self._processed = False
 
     @staticmethod
     def _get_localtime():
