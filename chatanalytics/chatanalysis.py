@@ -66,7 +66,7 @@ class ChatAnalysis:  # stored as GenericChat.analyze
         }
         self.target_subs = self._invert_dict({
             "message": ["messages", "msg", "msgs"],
-            "conversation": ["conversations", "conv", "convs"],
+            "conversation": ["conversations", "conv", "convs", "convo", "convos"],
             "word": ["words", "wd", "wds"],
             "character": ["characters", "char", "chars"],
             "duration": ["time", "length"]
