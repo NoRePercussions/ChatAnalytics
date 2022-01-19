@@ -234,7 +234,7 @@ class GenericChat:
             (~df['content'].isna())].copy()
 
         # Swap to using DateTimes
-        df['timestamp'] = pd.to_datetime(df['timestamp_ms'], unit="ms") \
+        df['timestamp'] = pd.to_datetime(df['timestamp_ms'], unit="ms", errors='coerce') \
             .dt.tz_localize('UTC') \
             .dt.tz_convert(self._timezone)
 
@@ -275,7 +275,7 @@ class GenericChat:
             (~df['content'].isna())].copy()
 
         # Swap to using DateTimes
-        timestamps = pd.to_datetime(df['Timestamp'])
+        timestamps = pd.to_datetime(df['Timestamp'], errors='coerce')
         if timestamps.dt.tz is None:
             timestamps = timestamps.dt.tz_localize('UTC')
         df["timestamp"] = timestamps.dt.tz_convert(self._timezone)
