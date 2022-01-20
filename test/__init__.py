@@ -1,4 +1,1 @@
-from .test_chats import (
-    DiscordChatTest,
-    MessengerChatTest,
-)
+from .test_chats import DiscordChatTest, MessengerChatTest

@@ -1,3 +1,1 @@
-from .chats import (
-    GenericChat,
-)
+from .chats import GenericChat

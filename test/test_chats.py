@@ -1,5 +1,6 @@
-import unittest
 import pickle
+import unittest
+
 import chatanalytics  # to be run in base directory
 
 

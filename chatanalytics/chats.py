@@ -1,21 +1,13 @@
-# Ingest data and preprocess it
-# TS | NRP
 import json
-import re
 import os
-from os import walk
-from os.path import isfile
 from typing import List
-import warnings
 
 import pandas as pd
 import pytz_deprecation_shim
-from pandas.util import hash_pandas_object
 import tzlocal
+from pandas.util import hash_pandas_object
 from pytz import UnknownTimeZoneError
-import functools
 
-import chatanalytics.chats  # Todo: remove in cleanup
 from .chatanalysis import ChatAnalysis
 from .chatgraph import ChatGraph
 
@@ -124,7 +116,7 @@ class GenericChat:
 
         self._reset_cache()  # Altering data!
 
-        if isfile(path):
+        if os.path.isfile(path):
             self.load(path)
             return
 

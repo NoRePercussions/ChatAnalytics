@@ -1,14 +1,7 @@
-# Manages analysis
-# NRP 21
+import re
 import warnings
 
-import pandas as pd
-
-from . import utils, autocorrect
-
-from datetime import timedelta
-import re
-from logging import debug
+from chatanalytics import autocorrect, utils
 
 
 class ChatAnalysis:  # stored as GenericChat.analyze

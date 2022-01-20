@@ -1,6 +1,3 @@
-# Utilities for generating test scripts
-
-
 from random import randint
 
 

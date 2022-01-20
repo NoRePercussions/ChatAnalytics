@@ -1,11 +1,8 @@
-# Autocorrect queries
-
-import os.path as path
+import os.path
 import re
 
-
 token_match = re.compile(r"[\w']+|[, ]+")
-local_root = path.dirname(path.abspath(__file__))
+local_root = os.path.dirname(os.path.abspath(__file__))
 alphabet = "abcdefghijklmnopqrstuvwxyz"
 first_letter_lookup = {key: [] for key in alphabet}
 
