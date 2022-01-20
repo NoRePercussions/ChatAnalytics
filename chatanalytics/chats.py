@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 from typing import List
@@ -309,7 +310,7 @@ class GenericChat:
         self._reset_cache()  # Altering data!
 
         self._messages = self._messages.sort_values("timestamp", ignore_index=True)
-        self._messages = self._messages.drop_duplicates()
+        self._messages = self._messages.drop_duplicates(ignore_index=True)
 
         self._make_conversations()
 
@@ -381,8 +382,8 @@ class GenericChat:
 
     def __hash__(self):
         if self._hash is None:
-            messages_hash = hash_pandas_object(self.messages).sum()  # unordered hashes
-            conversations_hash = hash_pandas_object(self.conversations).sum()
-            self._hash = hash(str(messages_hash) + str(conversations_hash))
-            # Todo: change to hashing a list of these
+            self._hash = 0
+            self._hash += hash_pandas_object(self.messages, index=True).sum()
+            self._hash += hash_pandas_object(self.conversations, index=True).sum()
+            self._hash %= 2**64
         return self._hash
