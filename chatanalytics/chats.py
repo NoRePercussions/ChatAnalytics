@@ -15,7 +15,7 @@ from .chatgraph import ChatGraph
 pd.set_option('display.max_columns', None)
 
 
-class GenericChat:
+class Chat:
     """Contains data from a chat with one or more people"""
 
     _message_columns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
@@ -374,7 +374,7 @@ class GenericChat:
     #####################
 
     def __eq__(self, other):
-        if not isinstance(other, GenericChat):
+        if not isinstance(other, Chat):
             # don't attempt to compare against unrelated types
             return NotImplemented
         return (self.messages.equals(other.messages)
