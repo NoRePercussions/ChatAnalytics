@@ -1,6 +1,1 @@
-from .test_chats import (
-    DiscordChatTest
-)
-from .test_groups import (
-    DiscordChatGroupTest
-)
+from .test_chats import DiscordChatTest, MessengerChatTest

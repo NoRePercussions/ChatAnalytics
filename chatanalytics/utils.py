@@ -1,9 +1,6 @@
-# Utilities
-
-
 import datetime
 
-from dateutil.relativedelta import relativedelta, MO
+from dateutil.relativedelta import MO, relativedelta
 
 epoch = datetime.date(1970, 1, 1)
 
