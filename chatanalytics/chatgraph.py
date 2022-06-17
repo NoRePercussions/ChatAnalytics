@@ -1,4 +1,5 @@
 import re
+import pandas as pd
 
 
 class ChatGraph:  # stored as GenericChat.analyze
@@ -17,9 +18,30 @@ class ChatGraph:  # stored as GenericChat.analyze
     def __init__(self, parent):
         self._parent = parent
 
-    def __call__(self, query, type, *args, **kwargs):
+    def __call__(self, query, kind="line", *args, **kwargs):
         parsed = self._parse_query(query)
-        return self._generate_graph(query, parsed)
+        return self._generate_graph(query, parsed, kind)
+
+    def line(self, query):
+        return self(query, kind="line")
+
+    def hist(self, query):
+        return self(query, kind="hist")
+
+    def bar(self, query):
+        return self(query, kind="bar")
+
+    def vbar(self, query):
+        return self(query, kind="vbar")
+
+    def kde(self, query):
+        return self(query, kind="kde")
+
+    def density(self, query):
+        return self(query, kind="density")
+
+    def area(self, query):
+        return self(query, kind="area")
 
     def _parse_query(self, query):
         if match := self.simple_query.match(query):
@@ -36,37 +58,66 @@ class ChatGraph:  # stored as GenericChat.analyze
         x_groups = x_groups.title()
         return {"y_axis_name":y_axis_name, "x_groups":x_groups, "title":title}
 
-    def _generate_graph(self, query, parsed):
+    def _generate_graph(self, query, parsed, kind):
         splits = self._decompose(parsed['x_groups'])
         if len(splits) == 0:
             raise ValueError("No groups were passed to sort by:\n" +
                                  f" Query {query} returns value {self._parent._analyze_backend(query)}")
         elif len(splits) == 1:
-            ax = self._parent._analyze_backend(query).plot(title=parsed['title'])
-            ax.set_xlabel(parsed['x_groups'])
-            ax.set_ylabel(parsed['y_axis_name'])
+            ax = self._parent.analyze(query).plot(
+                title=parsed['title'],
+                kind=kind
+            )
+
+            if pd.options.plotting.backend == 'matplotlib':
+                ax.set_xlabel(parsed['x_groups'])
+                ax.set_ylabel(parsed['y_axis_name'])
+            elif pd.options.plotting.backend == 'plotly':
+                ax.update_layout(
+                    showlegend=False,
+                    xaxis_title=parsed['x_groups'],
+                    yaxis_title=parsed['y_axis_name']
+                )
             return ax
         elif len(splits) == 2:
             result = self._parent._analyze_backend(query)
             idx = result.index
             if len(idx.unique(level=0)) < len(idx.unique(level=1)) or len(idx.unique(level=0)) < 5:
                 # If x < y or x < 5: Prefer y for the x axis, x for the legend
-                unstacked = result.unstack(level=0) # unstack x for legend
-                ax = unstacked.plot(title=parsed['title'])
-                ax.set_xlabel(splits[1])
-                ax.legend(title=splits[0])
-                ax.set_ylabel(parsed['y_axis_name'])
+                unstacked = result.unstack(level=0)  # unstack x for legend
+                ax = unstacked.plot(
+                    title=parsed['title'],
+                    kind=kind
+                )
+
+                if pd.options.plotting.backend == 'matplotlib':
+                    ax.set_xlabel(splits[1])
+                    ax.legend(title=splits[0])
+                    ax.set_ylabel(parsed['y_axis_name'])
+                elif pd.options.plotting.backend == 'plotly':
+                    ax.update_layout(
+                        legend_title=splits[0],
+                        xaxis_title=parsed['x_groups'],
+                        yaxis_title=parsed['y_axis_name']
+                    )
             else:
                 # Otherwise prefer x for x-axis, y for legend
-                unstacked = result.unstack(level=1) # unstack y for legend
-                ax = unstacked.plot(title=parsed['title'])
-                ax.set_xlabel(splits[0])
-                ax.legend(title=splits[1])
-                ax.set_ylabel(parsed['y_axis_name'])
+                unstacked = result.unstack(level=1)  # unstack y for legend
+                ax = unstacked.plot(title=parsed['title'], kind=kind)
+
+                if pd.options.plotting.backend == 'matplotlib':
+                    ax.set_xlabel(splits[0])
+                    ax.legend(title=splits[1])
+                    ax.set_ylabel(parsed['y_axis_name'])
+                elif pd.options.plotting.backend == 'plotly':
+                    ax.update_layout(
+                        legend_title=splits[1],
+                        xaxis_title=parsed['x_groups'],
+                        yaxis_title=parsed['y_axis_name']
+                    )
             return ax
         elif len(splits) > 2:
             raise ValueError(f"Query {query} has too many final groups")
-
 
     def _decompose(self, query):
         if isinstance(query, str):
