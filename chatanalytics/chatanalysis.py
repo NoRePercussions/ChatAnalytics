@@ -96,7 +96,7 @@ class ChatAnalysis:  # stored as GenericChat.analyze
 
     ################
 
-    def __call__(self, query, *args, **kwargs):
+    def analyze(self, query, *args, **kwargs):
         dist, query = autocorrect.correct_passage(query.lower())
         if dist > 0:
             warnings.warn(f"\nQuery corrected to: '{query}'")

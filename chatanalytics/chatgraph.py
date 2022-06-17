@@ -18,30 +18,30 @@ class ChatGraph:  # stored as GenericChat.analyze
     def __init__(self, parent):
         self._parent = parent
 
-    def __call__(self, query, kind="line", *args, **kwargs):
+    def _graph(self, query, kind="line", *args, **kwargs):
         parsed = self._parse_query(query)
         return self._generate_graph(query, parsed, kind)
 
     def line(self, query):
-        return self(query, kind="line")
+        return self._graph(query, kind="line")
 
     def hist(self, query):
-        return self(query, kind="hist")
+        return self._graph(query, kind="hist")
 
     def bar(self, query):
-        return self(query, kind="bar")
+        return self._graph(query, kind="bar")
 
     def vbar(self, query):
-        return self(query, kind="vbar")
+        return self._graph(query, kind="vbar")
 
     def kde(self, query):
-        return self(query, kind="kde")
+        return self._graph(query, kind="kde")
 
     def density(self, query):
-        return self(query, kind="density")
+        return self._graph(query, kind="density")
 
     def area(self, query):
-        return self(query, kind="area")
+        return self._graph(query, kind="area")
 
     def _parse_query(self, query):
         if match := self.simple_query.match(query):

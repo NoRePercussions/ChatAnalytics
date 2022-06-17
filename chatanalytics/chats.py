@@ -37,10 +37,7 @@ class Chat:
         self._conversations = pd.DataFrame(columns=self._conversation_columns)
 
         self._analyze_backend = ChatAnalysis(self)
-        self._graph_backend = ChatGraph(self)
-        # Quick patch for testing
-        self.analyze = self._analyze_backend
-        self.graph = self._graph_backend
+        self.graph = ChatGraph(self)  # potentially awkward?
 
         self._processed = False
         self._hash = None
@@ -66,6 +63,9 @@ class Chat:
     #######################
     # Public data methods #
     #######################
+
+    def analyze(self, query):
+        return self._analyze_backend.analyze(query)
 
     def load(self, path: str, allow_repeat_load: bool = True):
         """Loads a single JSON message file
