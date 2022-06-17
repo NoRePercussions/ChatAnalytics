@@ -62,7 +62,7 @@ class ChatGraph:  # stored as GenericChat.analyze
         splits = self._decompose(parsed['x_groups'])
         if len(splits) == 0:
             raise ValueError("No groups were passed to sort by:\n" +
-                                 f" Query {query} returns value {self._parent._analyze_backend(query)}")
+                                 f" Query {query} returns value {self._parent.analyze(query)}")
         elif len(splits) == 1:
             ax = self._parent.analyze(query).plot(
                 title=parsed['title'],
@@ -80,7 +80,7 @@ class ChatGraph:  # stored as GenericChat.analyze
                 )
             return ax
         elif len(splits) == 2:
-            result = self._parent._analyze_backend(query)
+            result = self._parent.analyze(query)
             idx = result.index
             if len(idx.unique(level=0)) < len(idx.unique(level=1)) or len(idx.unique(level=0)) < 5:
                 # If x < y or x < 5: Prefer y for the x axis, x for the legend
