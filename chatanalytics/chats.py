@@ -38,6 +38,9 @@ class Chat:
 
         self._analyze_backend = ChatAnalysis(self)
         self._graph_backend = ChatGraph(self)
+        # Quick patch for testing
+        self.analyze = self._analyze_backend
+        self.graph = self._graph_backend
 
         self._processed = False
         self._hash = None
@@ -124,7 +127,8 @@ class Chat:
         for (dirpath, dirnames, filenames) in os.walk(path):
             for f in filenames:
                 if self._type_is_discord(f"{dirpath}/{f}") \
-                        or self._type_is_discord(f"{dirpath}/{f}"):
+                        or self._type_is_discord(f"{dirpath}/{f}")\
+                        or self._type_is_messenger(f"{dirpath}/{f}"):
                     self.load(dirpath + "/" + f, allow_repeat_load=False)
             if not do_walk:
                 break
