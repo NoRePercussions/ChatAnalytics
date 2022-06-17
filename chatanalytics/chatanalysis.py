@@ -16,13 +16,13 @@ class ChatAnalysis:  # stored as GenericChat.analyze
     """
 
     # https://regex101.com/r/NmimVo/5/
-    simple_query = re.compile(r"^([a-zA-Z]+?) (?:per|by|sorted by) ([a-zA-Z]+?(?:(?: per| by|,|, and| and) [a-zA-Z]+" +
+    simple_query = re.compile(r"^([a-zA-Z]+?) (?:per|sorted by|by) ([a-zA-Z]+?(?:(?: per| by|, and|,| and) [a-zA-Z]+" +
                               r"?)*?)$")
     # https://regex101.com/r/tirsTV/4/
     complex_query = re.compile(r"^(?:([a-zA-Z]+) |([a-zA-Z]+(?: [a-zA-Z]+)*) of )([a-zA-Z]+) (?:per|by) ([a-zA-Z]+)" +
-                               r"(?: (?:per|by|sorted by) ([a-zA-Z]+(?:(?:, |, and| and)[a-zA-Z]+)*))?$")
+                               r"(?: (?:per|sorted by|by) ([a-zA-Z]+(?:(?:, and|,| and) [a-zA-Z]+)*))?$")
     # https://regex101.com/r/81gpcU/2/
-    decomposer = re.compile(r" by |, |, and | per | and | ")
+    decomposer = re.compile(r" by |, and |, | per | and | ")
 
     def __init__(self, parent):
         self._parent = parent
