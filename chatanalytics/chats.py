@@ -16,7 +16,31 @@ pd.set_option('display.max_columns', None)
 
 
 class Chat:
-    """Contains data from a chat with one or more people"""
+    """
+    Contains data from a chat with one or more people
+
+    Methods
+    -------
+    analyze:
+        Analyzes
+    load:
+        Loads
+    batch_load:
+        Loads, but in batches
+    clear:
+        Clears
+    set_timezone:
+        Sets the timezone
+    reset_timezone:
+        Resets the timezone
+
+    Attributes
+    ----------
+    conversations:
+        The Pandas Dataframe of conversations
+    messages:
+        The Pandas Dataframe of messages
+    """
 
     _message_columns = ["sender", "timestamp", "channel", "conversation", "source", "content"]
     _conversation_columns = ["startMessage", "endMessage", "start_timestamp", "end_timestamp"]
@@ -50,12 +74,15 @@ class Chat:
 
     @property
     def messages(self):
+        """The Pandas Dataframe of messages
+        """
         if not self._processed:
             self._post_process()
         return self._messages
 
     @property
     def conversations(self):
+        """The Pandas Dataframe of conversations"""
         if not self._processed:
             self._post_process()
         return self._conversations
@@ -68,11 +95,38 @@ class Chat:
         return self._analyze_backend.analyze(query)
 
     def load(self, path: str, allow_repeat_load: bool = True):
-        """Loads a single JSON message file
+        """
+        Loads data from a file or folder, automatically detecting
+        if it is discord or messenger data
 
-        :param path: the name of the file to load
-        :param _post_process: whether to postprocess data, default True
-        :return: None
+        Parameters
+        ----------
+        path : str
+            The path to the file or directory to load
+        allow_repeat_load : bool, optional
+            Whether to allow loading the same file multiple times. Duplicate
+            data will be removed in postprocessing.
+            Defaults to True.
+
+        Returns
+        -------
+        self : Chat
+            Returns self with loaded data
+
+        See Also
+        --------
+        batch_load : Loads all message data from a folder
+
+        Notes
+        -----
+        This operation is in-place; it returns self to allow for functional chaining.
+        This function should only really be used for manually structured data. To import
+        pre-structured data, see classes such as MessengerChat or DiscordChat.
+
+        Examples
+        --------
+        >>> chat = Chat()
+        >>> chat.load("messages.json")
         """
 
         self._reset_cache()  # Altering data!
@@ -136,9 +190,32 @@ class Chat:
         return self
 
     def clear(self):
-        """Clears all messages in the conversation
+        """
+        Clears all messages and conversations stored in the object
 
-        :return: None
+        Returns
+        -------
+        self : GenericChat
+            Returns self with cleared messages
+
+        See Also
+        --------
+        load : Loads data from a generic JSON chat file into self
+        batch_load : Loads all message data from a folder
+
+        Notes
+        -----
+        This operation is in-place; it returns self to allow for functional chaining.
+
+        Examples
+        --------
+        >>> a = Chat()
+        >>> a.load("messages.json")  # Loads everything in the messages/ folder
+        >>> a.clear()
+        >>> a.messages
+        Empty Dataframe
+        Columns: []
+        Index: []
         """
 
         self._reset_cache()  # Altering data!
