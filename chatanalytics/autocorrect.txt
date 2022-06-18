@@ -22,3 +22,5 @@ month
 year
 sender
 person
+channel
+chat

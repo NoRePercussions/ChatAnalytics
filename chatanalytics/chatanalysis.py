@@ -16,13 +16,13 @@ class ChatAnalysis:  # stored as GenericChat.analyze
     """
 
     # https://regex101.com/r/NmimVo/5/
-    simple_query = re.compile(r"^([a-zA-Z]+?) (?:per|by|sorted by) ([a-zA-Z]+?(?:(?: per| by|,|, and| and) [a-zA-Z]+" +
+    simple_query = re.compile(r"^([a-zA-Z]+?) (?:per|sorted by|by) ([a-zA-Z]+?(?:(?: per| by|, and|,| and) [a-zA-Z]+" +
                               r"?)*?)$")
     # https://regex101.com/r/tirsTV/4/
     complex_query = re.compile(r"^(?:([a-zA-Z]+) |([a-zA-Z]+(?: [a-zA-Z]+)*) of )([a-zA-Z]+) (?:per|by) ([a-zA-Z]+)" +
-                               r"(?: (?:per|by|sorted by) ([a-zA-Z]+(?:(?:, |, and| and)[a-zA-Z]+)*))?$")
+                               r"(?: (?:per|sorted by|by) ([a-zA-Z]+(?:(?:, and|,| and) [a-zA-Z]+)*))?$")
     # https://regex101.com/r/81gpcU/2/
-    decomposer = re.compile(r" by |, |, and | per | and | ")
+    decomposer = re.compile(r" by |, and |, | per | and | ")
 
     def __init__(self, parent):
         self._parent = parent
@@ -47,7 +47,7 @@ class ChatAnalysis:  # stored as GenericChat.analyze
             "stdev": ["standard deviation", "std dev", "std"],
             "total": ["sum"],
             "max": ["maximum"],
-            "min": ["minimum"]
+            "min": ["minimum"],
         })
 
         self.targets = {
@@ -55,14 +55,14 @@ class ChatAnalysis:  # stored as GenericChat.analyze
             "conversation": self._target_conversation,
             "word": self._target_word,
             "character": self._target_character,
-            "duration": self._target_duration
+            "duration": self._target_duration,
         }
         self.target_subs = self._invert_dict({
             "message": ["messages", "msg", "msgs"],
             "conversation": ["conversations", "conv", "convs", "convo", "convos"],
             "word": ["words", "wd", "wds"],
             "character": ["characters", "char", "chars"],
-            "duration": ["time", "length"]
+            "duration": ["time", "length"],
         })
 
         self.groups = {
@@ -72,7 +72,8 @@ class ChatAnalysis:  # stored as GenericChat.analyze
             "week": self._group_pre_week,
             "month": self._group_pre_month,
             "year": self._group_pre_year,
-            "sender": self._group_pre_sender
+            "sender": self._group_pre_sender,
+            "channel": self._group_pre_channel,
         }
         self.group_subs = self._invert_dict({
             "message": ["messages", "msg", "msgs"],
@@ -81,7 +82,8 @@ class ChatAnalysis:  # stored as GenericChat.analyze
             "week": ["wk"],
             "month": ["mo"],
             "year": ["yr"],
-            "sender": ["person"]
+            "sender": ["person"],
+            "channel": ["chat"],
         })
 
     @staticmethod
@@ -94,8 +96,8 @@ class ChatAnalysis:  # stored as GenericChat.analyze
 
     ################
 
-    def __call__(self, query, *args, **kwargs):
-        dist, query = autocorrect.correct_passage(query)
+    def analyze(self, query, *args, **kwargs):
+        dist, query = autocorrect.correct_passage(query.lower())
         if dist > 0:
             warnings.warn(f"\nQuery corrected to: '{query}'")
         args = self._parse_query(query)
@@ -227,6 +229,9 @@ class ChatAnalysis:  # stored as GenericChat.analyze
         return utils.get_year_of_messages(df)
 
     def _group_pre_sender(self, df):
+        return df
+
+    def _group_pre_channel(self, df):
         return df
 
     #####################

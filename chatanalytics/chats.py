@@ -37,7 +37,7 @@ class Chat:
         self._conversations = pd.DataFrame(columns=self._conversation_columns)
 
         self._analyze_backend = ChatAnalysis(self)
-        self._graph_backend = ChatGraph(self)
+        self.graph = ChatGraph(self)  # potentially awkward?
 
         self._processed = False
         self._hash = None
@@ -63,6 +63,9 @@ class Chat:
     #######################
     # Public data methods #
     #######################
+
+    def analyze(self, query):
+        return self._analyze_backend.analyze(query)
 
     def load(self, path: str, allow_repeat_load: bool = True):
         """Loads a single JSON message file
@@ -124,7 +127,8 @@ class Chat:
         for (dirpath, dirnames, filenames) in os.walk(path):
             for f in filenames:
                 if self._type_is_discord(f"{dirpath}/{f}") \
-                        or self._type_is_discord(f"{dirpath}/{f}"):
+                        or self._type_is_discord(f"{dirpath}/{f}")\
+                        or self._type_is_messenger(f"{dirpath}/{f}"):
                     self.load(dirpath + "/" + f, allow_repeat_load=False)
             if not do_walk:
                 break
