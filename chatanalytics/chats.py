@@ -92,6 +92,44 @@ class Chat:
     #######################
 
     def analyze(self, query):
+        """
+        Analyzes loaded data when passed a valid query
+
+        .. note::
+            Analysis and graphing tutorial coming soon
+
+        Parameters
+        ----------
+        query : str
+            The query to run (guide coming soon)
+
+        Returns
+        -------
+        self : Pandas.Dataframe
+            Returns a dataframe with analyzed data
+
+        .. See Also
+        .. --------
+        .. batch_load : Loads all message data from a folder
+
+        Notes
+        -----
+        There is rudimentary autocorrect - a small number of
+        insertions, omissions, misclicks, and swaps can be
+        fixed automatically. A warning will be raised.
+
+        Examples
+        --------
+        >>> chat = Chat()
+        >>> chat.load("messages.json")
+        >>> chat.analyze("mean messages per day per person")
+        sender
+        First Person    4.0
+        Best Friend     100.0
+        Parent          4.0
+        dtype: float64
+        """
+
         return self._analyze_backend.analyze(query)
 
     def load(self, path: str, allow_repeat_load: bool = True):
@@ -120,13 +158,14 @@ class Chat:
         Notes
         -----
         This operation is in-place; it returns self to allow for functional chaining.
-        This function should only really be used for manually structured data. To import
-        pre-structured data, see classes such as MessengerChat or DiscordChat.
+        This function has undefined behavior with incompatible JSON files that appear
+        to follow supported formats.
 
         Examples
         --------
         >>> chat = Chat()
         >>> chat.load("messages.json")
+        <chatanalytics.chats.Chat object at 0xXXXXXXXXX>
         """
 
         self._reset_cache()  # Altering data!
@@ -162,14 +201,38 @@ class Chat:
         return self
 
     def batch_load(self, path: str, do_walk: bool = False):
-        """Load a directory of data files
+        """
+        Loads data from a folder, automatically detecting
+        if it is discord or messenger data
 
-        Lists or walks through the directory and import *all* files
+        Parameters
+        ----------
+        path : str
+            The path to the directory to load
+        do_walk : bool, optional
+            Whether to walk through and load files from subdirectories
+            Defaults to False.
 
-        :param path: The path to the directory
-        :param do_walk: whether to walk through the directory,
-        :param _post_process: whether to postprocess data, default True
-        :return: None
+        Returns
+        -------
+        self : Chat
+            Returns self with loaded data
+
+        See Also
+        --------
+        load : Loads data from a file or folder
+
+        Notes
+        -----
+        This operation is in-place; it returns self to allow for functional chaining.
+        This function has undefined behavior with incompatible JSON files that appear
+        to follow supported formats.
+
+        Examples
+        --------
+        >>> chat = Chat()
+        >>> chat.batch_load("messages_folder/")
+        <chatanalytics.chats.Chat object at 0xXXXXXXXXX>
         """
 
         self._reset_cache()  # Altering data!
@@ -210,7 +273,7 @@ class Chat:
         Examples
         --------
         >>> a = Chat()
-        >>> a.load("messages.json")  # Loads everything in the messages/ folder
+        >>> a.load("messages.json")  # Loads everything in the messages.json file
         >>> a.clear()
         >>> a.messages
         Empty Dataframe
@@ -225,9 +288,36 @@ class Chat:
         return self
 
     def set_timezone(self, timezone=None):
-        """Sets the timezone to use
+        """
+        Sets the timezone used for messages in the object
 
-        :param timezone: None, tz name (str), or tzlocal/pytz object"""
+        Parameters
+        ----------
+        timezone : pytz., optional
+            The timezone to set. If no timezone is specified,
+            the system timezone will be detected.
+
+        Returns
+        -------
+        self : Chat
+            Returns self with a newly set timezone
+
+        See Also
+        --------
+        reset_timezone : Sets the timezone to the local zone
+
+        Notes
+        -----
+        Specifying a timezone is preferable to detecting system timezone.
+        Newly imported messages without a UTC offset will use the
+        specified timezone.
+
+        Examples
+        --------
+        >>> a = Chat()
+        >>> a.load("messages.json")  # Loads everything in the messages/ folder
+        >>> a.set_timezone("America/New_York")
+        """
         self._reset_cache()
 
         if timezone is None:
@@ -243,7 +333,30 @@ class Chat:
         return self
 
     def reset_timezone(self):
-        """Sets the timezone to local time"""
+        """
+        Sets the timezone to the system timezone
+
+        Returns
+        -------
+        self : Chat
+            Returns self with a newly set timezone
+
+        See Also
+        --------
+        set_timezone : Sets the timezone to a specified timezone
+
+        Notes
+        -----
+        Specifying a timezone is often preferable to detecting system timezone.
+        Newly imported messages without a UTC offset will use the
+        specified timezone.
+
+        Examples
+        --------
+        >>> a = Chat()
+        >>> a.load("messages.json")  # Loads everything in the messages/ folder
+        >>> a.reset_timezone()
+        """
         self.set_timezone(timezone=None)
 
         return self
@@ -253,6 +366,33 @@ class Chat:
     ######################
 
     def _type_is_messenger(self, path: str) -> False or str:
+        """
+        Detects if the path passed points to a store of Facebook
+        Messenger messages, and returns the path if so, else returns
+        False.
+
+        Parameters
+        ----------
+        path : str
+            The path to check
+
+        Returns
+        -------
+        path : False or str
+            If the path is not Messenger data, return False.
+            Otherwise, return the path.
+
+        See Also
+        --------
+        _type_is_discord : Tests if a file is in Discord format
+
+        Examples
+        --------
+        >>> a = Chat()
+        >>> a.load("messages.json")  # Loads everything in the messages/ folder
+        >>> a.set_timezone("America/New_York")
+        """
+
         if not os.path.isfile(path):
             return False
 
@@ -268,6 +408,34 @@ class Chat:
         return path
 
     def _type_is_discord(self, path: str) -> False or str:
+        """
+        Detects if the path passed points to a store of discord
+        messages (a directory, channel.json, or messages.csv),
+        and returns the path to the directory which contains
+        the channel.json and messages.csv files.
+
+        Parameters
+        ----------
+        path : str
+            The path to check
+
+        Returns
+        -------
+        path : False or str
+            If the path is not Discord data, return False.
+            Otherwise, return the directory containing the data.
+
+        See Also
+        --------
+        _type_is_messenger : Tests if a file is in Messenger format
+
+        Examples
+        --------
+        >>> a = Chat()
+        >>> a.load("messages.json")  # Loads everything in the messages/ folder
+        >>> a.set_timezone("America/New_York")
+        """
+
         if not os.path.isfile(path):
             if not os.path.isdir(path):
                 return False
@@ -288,7 +456,8 @@ class Chat:
 
 
     def _pre_process(self, data: [dict, pd.DataFrame]) -> pd.DataFrame:
-        """Processes data before adding to data record
+        """
+        Processes general data before adding to data record
 
         Creates a dataframe, orders the data,
         sets source column, and removes extra columns
@@ -308,7 +477,8 @@ class Chat:
         return df
 
     def _messenger_pre_process(self, data: [dict, pd.DataFrame]) -> pd.DataFrame:
-        """Processes data before adding to data record
+        """
+        Processes Messenger data before adding to data record
 
         Creates a dataframe, orders the data,
         sets source column, and removes extra columns
@@ -342,7 +512,8 @@ class Chat:
         return df
 
     def _discord_pre_process(self, channel, messages) -> pd.DataFrame:
-        """Processes data before adding to data record
+        """
+        Processes Discord data before adding to data record
 
         Creates a dataframe, orders the data,
         sets source column, and removes extra columns
@@ -383,7 +554,8 @@ class Chat:
         return df
 
     def _post_process(self):
-        """Processes entire data after adding to record
+        """
+        Processes entire data after adding to record
 
         Sorts all messages by timestamp and then groups conversations
 
@@ -398,7 +570,8 @@ class Chat:
         self._processed = True
 
     def _make_conversations(self, df=None):
-        """Groups messages into conversations
+        """
+        Groups messages into conversations
 
         Messages sent less than an hour apart to the same person
         count as the same conversation,
