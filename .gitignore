@@ -1,6 +1,6 @@
 /discordtest.py
 /messengertest.py
 /local_test_setup/
-/source/_build/
-/source/_static/
-/source/_templates/
+/docs/_build/
+/docs/_static/
+/docs/_templates/
