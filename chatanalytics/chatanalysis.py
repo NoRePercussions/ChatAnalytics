@@ -76,8 +76,8 @@ class ChatAnalysis:  # stored as GenericChat.analyze
             "channel": self._group_pre_channel,
         }
         self.group_subs = self._invert_dict({
-            "message": ["messages", "msg", "msgs"],
-            "conversation": ["conversations", "conv", "convs"],
+            "message": ["msg"],
+            "conversation": ["conv", "convo"],
             "day": [],
             "week": ["wk"],
             "month": ["mo"],

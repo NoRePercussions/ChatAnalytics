@@ -1,7 +1,7 @@
 .. importing_data:
 
 Importing Data
-=========
+==============
 
 For the sake of demonstration, we will use the directories of test
 data located on the `project GitHub <https://github.com/NoRePercussions/ChatAnalytics/tree/main/test/test_data>`_.

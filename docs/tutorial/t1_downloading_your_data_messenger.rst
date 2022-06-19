@@ -1,7 +1,7 @@
 .. downloading_your_data_messenger:
 
 Downloading your Facebook Messenger Data
-===========
+========================================
 
 .. |dropdown inline| image:: /images/fb_user_dropdown.png
     :width: 40
